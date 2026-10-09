@@ -1,0 +1,14 @@
+{
+  "name": "labellens",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Safe medicine-label translation for patients who don't read English",
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "test": "node tests/run-tests.mjs && node tests/ui-tests.mjs"
+  },
+  "devDependencies": {
+    "playwright": "1.56.0"
+  }
+}

@@ -1,0 +1,537 @@
+[
+ {
+  "name": "label 1: Take ONE capsule THREE times a day until finished.",
+  "text": "AMOXICILLIN 500MG CAPSULES\nTake ONE capsule THREE times a day until finished.\nComplete the full course.\nKEEP OUT OF REACH OF CHILDREN\nPatient: Sara Ahmadi   Qty: 20\nSample Pharmacy, Parramatta",
+  "expect": {
+   "status": "ok",
+   "unit": "capsule",
+   "dose": {
+    "min": 1,
+    "max": 1
+   },
+   "perDay": 3,
+   "every": null,
+   "prn": false,
+   "max": null,
+   "food": null,
+   "warnings": [
+    "children",
+    "course"
+   ]
+  }
+ },
+ {
+  "name": "label 2: Take ONE tablet TWICE a day with food for diabetes.",
+  "text": "METFORMIN 500MG TABLETS\nTake ONE tablet TWICE a day with food for diabetes.\nSwallow whole. Do not crush or chew.\nPatient: Minh Nguyen   Rpts: 5",
+  "expect": {
+   "status": "ok",
+   "unit": "tablet",
+   "dose": {
+    "min": 1,
+    "max": 1
+   },
+   "perDay": 2,
+   "every": null,
+   "prn": false,
+   "max": null,
+   "food": "with",
+   "warnings": [
+    "whole"
+   ]
+  }
+ },
+ {
+  "name": "label 3: Take 1 to 2 tablets every 4 to 6 hours when required for pai",
+  "text": "PARACETAMOL 500MG TABLETS\nTake 1 to 2 tablets every 4 to 6 hours when required for pain.\nDo not take more than 8 tablets in 24 hours.",
+  "expect": {
+   "status": "ok",
+   "unit": "tablet",
+   "dose": {
+    "min": 1,
+    "max": 2
+   },
+   "perDay": null,
+   "every": [
+    4,
+    6
+   ],
+   "prn": true,
+   "max": 8,
+   "food": null,
+   "warnings": []
+  }
+ },
+ {
+  "name": "label 4: Take ONE tablet at night.",
+  "text": "CETIRIZINE 10MG TABLETS\nTake ONE tablet at night.\nMay cause drowsiness. Do not drink alcohol.",
+  "expect": {
+   "status": "ok",
+   "unit": "tablet",
+   "dose": {
+    "min": 1,
+    "max": 1
+   },
+   "perDay": 1,
+   "every": null,
+   "prn": false,
+   "max": null,
+   "food": null,
+   "warnings": [
+    "alcohol",
+    "drowsy"
+   ]
+  }
+ },
+ {
+  "name": "label 5: SALBUTAMOL 100MCG INHALER",
+  "text": "SALBUTAMOL 100MCG INHALER\nInhale 2 puffs every 4 hours when required.\nShake well before use.",
+  "expect": {
+   "status": "ok",
+   "unit": "puff",
+   "dose": {
+    "min": 2,
+    "max": 2
+   },
+   "perDay": null,
+   "every": [
+    4,
+    4
+   ],
+   "prn": true,
+   "max": null,
+   "food": null,
+   "warnings": [
+    "shake"
+   ]
+  }
+ },
+ {
+  "name": "label 6: Take TWO tablets daily for 3 days then ONE tablet daily for ",
+  "text": "PREDNISOLONE 25MG TABLETS\nTake TWO tablets daily for 3 days then ONE tablet daily for 3 days then stop.\nTake with food.",
+  "expect": {
+   "status": "refused"
+  }
+ },
+ {
+  "name": "label 7: Take ONE capsule daily in the morning with food for 7 days.",
+  "text": "DOXYCYCLINE 100MG CAPSULES\nTake ONE capsule daily in the morning with food for 7 days.\nAvoid prolonged exposure to sunlight.",
+  "expect": {
+   "status": "ok",
+   "unit": "capsule",
+   "dose": {
+    "min": 1,
+    "max": 1
+   },
+   "perDay": 1,
+   "every": null,
+   "prn": false,
+   "max": null,
+   "food": "with",
+   "warnings": [
+    "sun"
+   ]
+  }
+ },
+ {
+  "name": "label 8: Take half a tablet once a day.",
+  "text": "X 5MG\nTake half a tablet once a day.",
+  "expect": {
+   "status": "ok",
+   "unit": "tablet",
+   "dose": {
+    "half": true
+   },
+   "perDay": 1,
+   "every": null,
+   "prn": false,
+   "max": null,
+   "food": null,
+   "warnings": []
+  }
+ },
+ {
+  "name": "label 9: Take ONE tablet once a week on Monday.",
+  "text": "METHOTREXATE 10MG TABLETS\nTake ONE tablet once a week on Monday.",
+  "expect": {
+   "status": "refused"
+  }
+ },
+ {
+  "name": "label 10: Take 1 tablet daily for cholesterol.",
+  "text": "ATORVASTATIN 20MG\nTake 1 tablet daily for cholesterol.",
+  "expect": {
+   "status": "ok",
+   "unit": "tablet",
+   "dose": {
+    "min": 1,
+    "max": 1
+   },
+   "perDay": 1,
+   "every": null,
+   "prn": false,
+   "max": null,
+   "food": null,
+   "warnings": []
+  }
+ },
+ {
+  "name": "label 11: Take one capsule daily 30 minutes before breakfast.",
+  "text": "OMEPRAZOLE 20MG CAPSULES\nTake one capsule daily 30 minutes before breakfast.\nSwallow capsules whole.",
+  "expect": {
+   "status": "ok",
+   "unit": "capsule",
+   "dose": {
+    "min": 1,
+    "max": 1
+   },
+   "perDay": 1,
+   "every": null,
+   "prn": false,
+   "max": null,
+   "food": "before",
+   "warnings": [
+    "whole"
+   ]
+  }
+ },
+ {
+  "name": "label 12: Take 2 tablets three times a day after food.",
+  "text": "IBUPROFEN 200MG\nTake 2 tablets three times a day after food.\nDo not take more than 6 tablets a day.",
+  "expect": {
+   "status": "ok",
+   "unit": "tablet",
+   "dose": {
+    "min": 2,
+    "max": 2
+   },
+   "perDay": 3,
+   "every": null,
+   "prn": false,
+   "max": 6,
+   "food": "after",
+   "warnings": []
+  }
+ },
+ {
+  "name": "label 13: Take 5 mL three times a day for 5 days.",
+  "text": "AMOXICILLIN 250MG/5ML SUSPENSION\nTake 5 mL three times a day for 5 days.\nShake well. Keep in the fridge.",
+  "expect": {
+   "status": "ok",
+   "unit": "ml",
+   "dose": {
+    "min": 5,
+    "max": 5
+   },
+   "perDay": 3,
+   "every": null,
+   "prn": false,
+   "max": null,
+   "food": null,
+   "warnings": [
+    "fridge",
+    "shake"
+   ]
+  }
+ },
+ {
+  "name": "label 14: Instil 1 drop into the affected eye four times a day.",
+  "text": "CHLORAMPHENICOL 0.5% EYE DROPS\nInstil 1 drop into the affected eye four times a day.",
+  "expect": {
+   "status": "ok",
+   "unit": "drop",
+   "dose": {
+    "min": 1,
+    "max": 1
+   },
+   "perDay": 4,
+   "every": null,
+   "prn": false,
+   "max": null,
+   "food": null,
+   "warnings": []
+  }
+ },
+ {
+  "name": "label 15: Take one tablet twice daily, morning and evening.",
+  "text": "Take one tablet twice daily, morning and evening.",
+  "expect": {
+   "status": "ok",
+   "unit": "tablet",
+   "dose": {
+    "min": 1,
+    "max": 1
+   },
+   "perDay": 2,
+   "every": null,
+   "prn": false,
+   "max": null,
+   "food": null,
+   "warnings": []
+  }
+ },
+ {
+  "name": "label 16: Take 10 tablets twice a day.",
+  "text": "Take 10 tablets twice a day.",
+  "expect": {
+   "status": "unusual",
+   "unit": "tablet",
+   "dose": {
+    "min": 10,
+    "max": 10
+   },
+   "perDay": 2,
+   "every": null,
+   "prn": false,
+   "max": null,
+   "food": null,
+   "warnings": []
+  }
+ },
+ {
+  "name": "label 17: Use as directed.",
+  "text": "Use as directed.",
+  "expect": {
+   "status": "refused"
+  }
+ },
+ {
+  "name": "label 18: Take one tablet three times a day and drink plenty of water.",
+  "text": "Take one tablet three times a day and drink plenty of water.",
+  "expect": {
+   "status": "ok",
+   "unit": "tablet",
+   "dose": {
+    "min": 1,
+    "max": 1
+   },
+   "perDay": 3,
+   "every": null,
+   "prn": false,
+   "max": null,
+   "food": null,
+   "warnings": [
+    "water"
+   ]
+  }
+ },
+ {
+  "name": "label 19: hello world",
+  "text": "hello world",
+  "expect": {
+   "status": "refused"
+  }
+ },
+ {
+  "name": "OCR of amoxicillin",
+  "text": "AMOXICILLIN 500MG CAPSULES\n\nTake ONE capsule THREE times a day until finished.\nComplete the full course.\n\nKEEP OUT OF REACH OF CHILDREN\n\nPatient: Sara Ahmadi Qty: 20\n\nSample Pharmacy, Parramatta\n\nSAMPLE LABEL - NOT A REAL PRESCRIPTION\n",
+  "expect": {
+   "status": "ok",
+   "unit": "capsule",
+   "dose": {
+    "min": 1,
+    "max": 1
+   },
+   "perDay": 3,
+   "every": null,
+   "prn": false,
+   "max": null,
+   "food": null,
+   "warnings": [
+    "children",
+    "course"
+   ]
+  }
+ },
+ {
+  "name": "OCR of amoxicillin_photo",
+  "text": "AMOXICILLIN 500MG CAPSULES\n\nTake ONE capsule THREE times a day until finished.\nComplete the full course.\nKEEP OUT OF REACH OF CHILDREN\n\nPatient: Sara Ahmadi Qty: 20\nSample Pharmacy, Parramatta\n\n",
+  "expect": {
+   "status": "ok",
+   "unit": "capsule",
+   "dose": {
+    "min": 1,
+    "max": 1
+   },
+   "perDay": 3,
+   "every": null,
+   "prn": false,
+   "max": null,
+   "food": null,
+   "warnings": [
+    "children",
+    "course"
+   ]
+  }
+ },
+ {
+  "name": "OCR of cetirizine",
+  "text": "CETIRIZINE 1O0MG TABLETS\n\nTake ONE tablet at night.\nMay cause drowsiness. Do not drink alcohol.\n\nSAMPLE LABEL - NOT A REAL PRESCRIPTION\n",
+  "expect": {
+   "status": "ok",
+   "unit": "tablet",
+   "dose": {
+    "min": 1,
+    "max": 1
+   },
+   "perDay": 1,
+   "every": null,
+   "prn": false,
+   "max": null,
+   "food": null,
+   "warnings": [
+    "alcohol",
+    "drowsy"
+   ]
+  }
+ },
+ {
+  "name": "OCR of cetirizine_photo",
+  "text": "CETIRIZINE 10MG TABLETS\nTake ONE tablet at night.\nMay cause drowsiness. Do not drink alcohol.\n\n",
+  "expect": {
+   "status": "ok",
+   "unit": "tablet",
+   "dose": {
+    "min": 1,
+    "max": 1
+   },
+   "perDay": 1,
+   "every": null,
+   "prn": false,
+   "max": null,
+   "food": null,
+   "warnings": [
+    "alcohol",
+    "drowsy"
+   ]
+  }
+ },
+ {
+  "name": "OCR of metformin",
+  "text": "METFORMIN 500MG TABLETS\n\nTake ONE tablet TWICE a day with food for diabetes.\n\nSwallow whole. Do not crush or chew.\nPatient: Minh Nguyen Rpts: 5\n\nSAMPLE LABEL - NOT A REAL PRESCRIPTION\n",
+  "expect": {
+   "status": "ok",
+   "unit": "tablet",
+   "dose": {
+    "min": 1,
+    "max": 1
+   },
+   "perDay": 2,
+   "every": null,
+   "prn": false,
+   "max": null,
+   "food": "with",
+   "warnings": [
+    "whole"
+   ]
+  }
+ },
+ {
+  "name": "OCR of metformin_photo",
+  "text": "METFORMIN 500MG TABLETS\nTake ONE tablet Twi\nSwallow whole. Do not\nPatient: Minh Nguyen Rpts: 5\n\nCE a day with food for diabetes,\ncrush or chew,\n\n",
+  "expect": {
+   "status": "refused"
+  }
+ },
+ {
+  "name": "OCR of paracetamol",
+  "text": "PARACETAMOL 500MG TABLETS\n\nTake 1 to 2 tablets every 4 to 6 hours when required\nfor pain.\nDo not take more than 8 tablets in 24 hours.\n\nSAMPLE LABEL - NOT A REAL PRESCRIPTION\n",
+  "expect": {
+   "status": "ok",
+   "unit": "tablet",
+   "dose": {
+    "min": 1,
+    "max": 2
+   },
+   "perDay": null,
+   "every": [
+    4,
+    6
+   ],
+   "prn": true,
+   "max": 8,
+   "food": null,
+   "warnings": []
+  }
+ },
+ {
+  "name": "OCR of paracetamol_photo",
+  "text": "PARACETAMOL 500MG TABLETS\nTake 1 to 2 tablets every 4 to 6 hours when required\n\nfor pain.\nDo not take more than 8 tablets in 24 hours.\n\n",
+  "expect": {
+   "status": "ok",
+   "unit": "tablet",
+   "dose": {
+    "min": 1,
+    "max": 2
+   },
+   "perDay": null,
+   "every": [
+    4,
+    6
+   ],
+   "prn": true,
+   "max": 8,
+   "food": null,
+   "warnings": []
+  }
+ },
+ {
+  "name": "OCR of prednisolone",
+  "text": "PREDNISOLONE 25MG TABLETS\n\nTake TWO tablets daily for 3 days then ONE tablet\ndaily for 3 days then stop.\nTake with food.\n\nSAMPLE LABEL - NOT A REAL PRESCRIPTION\n",
+  "expect": {
+   "status": "refused"
+  }
+ },
+ {
+  "name": "OCR of prednisolone_photo",
+  "text": "PREDNISOLONE 25MG TABLETS\n\nTake TWO tablets daily for 3 days then ONE tablet\ndaily for 3 days then stop.\n\nTake with food.\n\n",
+  "expect": {
+   "status": "refused"
+  }
+ },
+ {
+  "name": "OCR of salbutamol",
+  "text": "SALBUTAMOL 100MCG INHALER\n\nInhale 2 puffs every 4 hours when required.\nShake well before use.\n\nSAMPLE LABEL - NOT A REAL PRESCRIPTION\n",
+  "expect": {
+   "status": "ok",
+   "unit": "puff",
+   "dose": {
+    "min": 2,
+    "max": 2
+   },
+   "perDay": null,
+   "every": [
+    4,
+    4
+   ],
+   "prn": true,
+   "max": null,
+   "food": null,
+   "warnings": [
+    "shake"
+   ]
+  }
+ },
+ {
+  "name": "OCR of salbutamol_photo",
+  "text": "SALBUTAMOL 100MCG INHALER\n\nInhale 2 Puffs every 4 hours when required.\n\nShake well before use.\n\n",
+  "expect": {
+   "status": "ok",
+   "unit": "puff",
+   "dose": {
+    "min": 2,
+    "max": 2
+   },
+   "perDay": null,
+   "every": [
+    4,
+    4
+   ],
+   "prn": true,
+   "max": null,
+   "food": null,
+   "warnings": [
+    "shake"
+   ]
+  }
+ }
+]
