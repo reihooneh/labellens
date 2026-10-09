@@ -1,0 +1,883 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net blob:; worker-src 'self' blob: https://cdn.jsdelivr.net; connect-src 'self' blob: data: https://cdn.jsdelivr.net https://tessdata.projectnaptha.com; img-src 'self' blob: data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="color-scheme" content="light dark">
+<title>LabelLens</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Public+Sans:wght@400;600;700&family=Vazirmatn:wght@400;700&family=Noto+Sans+Arabic:wght@400;700&family=Noto+Sans+SC:wght@400;700&family=Noto+Sans+TC:wght@400;700&family=Noto+Sans+Devanagari:wght@400;700&family=Noto+Sans+Gurmukhi:wght@400;700&family=Noto+Nastaliq+Urdu:wght@400;700&family=Noto+Sans+Tamil:wght@400;700&family=Noto+Sans+Bengali:wght@400;700&family=Noto+Sans+KR:wght@400;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: a pharmacy-counter tool. Label in on the left (or top on phones), the patient's version on the right. */
+:root{
+  --bg:#F3F6F4; --surface:#FFFFFF; --ink:#13241D; --muted:#55665E; --line:#D6DFDA;
+  --accent:#0F6B4F; --accent-ink:#FFFFFF; --accent-soft:#E2F1EA;
+  --label:#FFFDF6; --label-line:#E7DFC6;
+  --ok:#1F7A4C; --warn:#9A6312; --bad:#B23A2A; --warn-soft:#FBF0DD; --bad-soft:#FBE7E3;
+  --display:"Fraunces", Georgia, "Times New Roman", serif;
+  --body:"Public Sans", "Segoe UI", system-ui, sans-serif;
+  --mono:"IBM Plex Mono", ui-monospace, Menlo, monospace;
+  --fa:"Vazirmatn", "Noto Sans Arabic", Tahoma, sans-serif;
+  --ar:"Noto Sans Arabic", "Vazirmatn", Tahoma, sans-serif;
+  --zh:"Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0D1512; --surface:#15201B; --ink:#E4EEE9; --muted:#97A9A0; --line:#2A3832;
+  --accent:#4CC497; --accent-ink:#06150F; --accent-soft:#163428;
+  --label:#1C2420; --label-line:#3A4640;
+  --ok:#5BC98F; --warn:#E5AE55; --bad:#F08A78; --warn-soft:#3A2E17; --bad-soft:#3D221D; color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0D1512; --surface:#15201B; --ink:#E4EEE9; --muted:#97A9A0; --line:#2A3832;
+  --accent:#4CC497; --accent-ink:#06150F; --accent-soft:#163428;
+  --label:#1C2420; --label-line:#3A4640;
+  --ok:#5BC98F; --warn:#E5AE55; --bad:#F08A78; --warn-soft:#3A2E17; --bad-soft:#3D221D; color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5;padding-inline:16px;padding-block:20px 56px;margin:0}
+.wrap{max-width:1160px;margin:0 auto;display:grid;gap:28px}
+h1,h2,h3{margin:0;text-wrap:balance;line-height:1.15}
+h1{font-family:var(--display);font-size:clamp(2.1rem,6vw,3.2rem);letter-spacing:-.01em}
+h2{font-size:1.15rem}
+h3{font-size:1rem}
+p{margin:0}
+a{color:var(--accent)}
+.eyebrow{font-family:var(--mono);font-size:.74rem;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+.lede{color:var(--muted);max-width:64ch;font-size:1.05rem}
+.top{display:grid;gap:10px}
+.facts{display:flex;flex-wrap:wrap;gap:6px 22px;font-size:.92rem;color:var(--muted)}
+.facts b{color:var(--ink)}
+
+.tool{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:20px;align-items:start}
+@media (max-width:900px){.tool{grid-template-columns:1fr}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;display:grid;gap:14px;min-width:0;align-content:start}
+.step{font-family:var(--mono);font-size:.72rem;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+
+.tabs{display:flex;flex-wrap:wrap;gap:6px}
+button,.filebtn{font:inherit;font-size:.95rem;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:9px 16px;cursor:pointer;line-height:1.2;min-height:42px}
+button:hover,.filebtn:hover{border-color:var(--muted)}
+button:focus-visible,.filebtn:focus-within,textarea:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+button:disabled{opacity:.5;cursor:not-allowed}
+.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:700}
+.filebtn{display:inline-flex;align-items:center;background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:700;position:relative}
+.filebtn input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.hint{font-size:.9rem;color:var(--muted)}
+.samples{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.samples button{border-radius:10px;text-align:left;display:grid;gap:2px;padding:10px 12px}
+.samples button small{color:var(--muted);font-size:.78rem}
+.samples button[aria-pressed="true"] small{color:var(--bg)}
+.preview{max-height:220px;width:auto;max-width:100%;border-radius:8px;border:1px solid var(--line);justify-self:start}
+.status{font-size:.9rem;padding:10px 12px;border-radius:8px;background:var(--warn-soft)}
+.status.ok{background:var(--accent-soft)}
+
+.labelbox{background:var(--label);border:1px solid var(--label-line);border-radius:10px;padding:12px;display:grid;gap:6px}
+.labelbox label{font-family:var(--mono);font-size:.72rem;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+textarea{width:100%;min-height:150px;resize:vertical;font-family:var(--mono);font-size:.92rem;line-height:1.55;border:none;background:transparent;color:var(--ink);padding:0}
+
+.langs{display:flex;flex-wrap:wrap;gap:6px}
+.langs button{min-width:84px}
+.langs button{min-height:40px;padding:8px 14px}
+.langs-note{font-size:.82rem;color:var(--muted)}
+.banner{border:1px solid var(--accent);background:var(--accent-soft);border-radius:10px;padding:12px;display:grid;gap:4px;font-size:.95rem}
+.banner strong{font-size:1.02rem}
+.banner .num{font-family:var(--mono);font-size:1.1rem;user-select:all}
+
+.out{display:grid;gap:12px}
+.drug{display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px 12px;align-items:baseline;border-bottom:1px solid var(--line);padding-bottom:10px}
+.drug strong{font-family:var(--mono);font-size:1rem;letter-spacing:.02em}
+.badge{font-family:var(--mono);font-size:.7rem;letter-spacing:.05em;text-transform:uppercase;padding:3px 9px;border-radius:999px;border:1px solid currentColor}
+.badge.ok{color:var(--ok)} .badge.warn{color:var(--warn)} .badge.bad{color:var(--bad)}
+
+.sched{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.slot{border:1px solid var(--line);border-radius:10px;padding:10px 6px;display:grid;justify-items:center;gap:6px;text-align:center;min-width:0}
+.slot.on{background:var(--accent-soft);border-color:var(--accent)}
+.slot.off{opacity:.42}
+.slot svg{width:34px;height:34px}
+.slot .t{font-size:.86rem;font-weight:700;overflow-wrap:anywhere}
+.slot .d{font-size:.8rem;color:var(--muted);min-height:1.2em}
+.pills{display:flex;gap:3px;justify-content:center;flex-wrap:wrap;min-height:20px}
+.pills svg{width:24px;height:24px}
+.chip-row{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:inline-flex;gap:8px;align-items:center;border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:.92rem}
+.chip svg{width:22px;height:22px;flex:none}
+
+.lines{display:grid;gap:10px;margin:0;padding:0;list-style:none}
+.lines li{display:grid;gap:2px;padding:10px 12px;border-radius:10px;background:var(--bg)}
+.lines .k{font-family:var(--mono);font-size:.7rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.lines .v{font-size:1.18rem;font-weight:700;line-height:1.4}
+.lines .en{font-size:.86rem;color:var(--muted)}
+.lines li.warnline{background:var(--warn-soft)}
+.lines li.badline{background:var(--bad-soft)}
+[dir="rtl"]{text-align:right}
+.lines .k:not([lang="en"]),.quiz .k:not([lang="en"]){letter-spacing:0;text-transform:none;font-size:.82rem}
+[lang="fa"][lang]{font-family:var(--fa)}
+[lang="ar"][lang]{font-family:var(--ar)}
+[lang="ur"][lang]{font-family:"Noto Nastaliq Urdu","Noto Sans Arabic",var(--ar);line-height:2.1}
+[lang="zh-Hans"][lang]{font-family:var(--zh)}
+[lang="zh-Hant"][lang]{font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+[lang="hi"][lang],[lang="ne"][lang]{font-family:"Noto Sans Devanagari","Nirmala UI","Kohinoor Devanagari",sans-serif}
+[lang="pa"][lang]{font-family:"Noto Sans Gurmukhi","Nirmala UI",sans-serif}
+[lang="ta"][lang]{font-family:"Noto Sans Tamil","Nirmala UI","Tamil Sangam MN",sans-serif}
+[lang="bn"][lang]{font-family:"Noto Sans Bengali","Nirmala UI","Kohinoor Bangla",sans-serif}
+[lang="ko"][lang]{font-family:"Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif}
+
+.quiz{display:grid;gap:10px;border:1px dashed var(--line);border-radius:10px;padding:12px}
+.quiz .q{font-weight:700}
+.quiz .opts{display:flex;flex-wrap:wrap;gap:8px}
+.quiz .opts button{border-radius:10px}
+.quiz .opts button.right{background:var(--accent-soft);border-color:var(--ok)}
+.quiz .opts button.wrong{background:var(--bad-soft);border-color:var(--bad)}
+.fb{font-size:.92rem;min-height:1.4em}
+
+.empty{color:var(--muted);padding:18px;border:1px dashed var(--line);border-radius:10px;text-align:center}
+
+.why{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+@media (max-width:820px){.why{grid-template-columns:1fr}}
+.why .panel p{color:var(--muted);font-size:.95rem}
+.bars{display:grid;gap:8px}
+.bar{display:grid;grid-template-columns:7.5em 1fr 3.2em;gap:8px;align-items:center;font-size:.88rem}
+.bar .track{display:block;height:14px;border-radius:7px;background:var(--line);overflow:hidden}
+.bar .fill{display:block;height:100%;background:var(--warn)}
+.bar .num{font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right}
+footer{color:var(--muted);font-size:.85rem;border-top:1px solid var(--line);padding-top:14px;display:grid;gap:6px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <span class="eyebrow">Optimise 26 prototype · Safe medicine-label translation</span>
+    <h1>LabelLens</h1>
+    <p class="lede">Turns an English pharmacy label into clear instructions in the patient's own language, with a picture schedule and audio. It never translates freely: it reads the label into fixed parts and rebuilds it from checked phrases, and it says “ask your pharmacist” instead of guessing.</p>
+    <div class="facts">
+      <span><b>222,475</b> Western Sydney residents speak little or no English</span>
+      <span><b>~250,000</b> medicine-related hospital admissions a year in Australia</span>
+    </div>
+  </header>
+
+  <section class="tool" aria-label="Label translator">
+    <div class="panel">
+      <span class="step">Step 1 · The label</span>
+      <div class="tabs" role="group" aria-label="How to add the label">
+        <button type="button" id="tSample" aria-pressed="true">Try a sample</button>
+        <button type="button" id="tPhoto" aria-pressed="false">Photo of label</button>
+        <button type="button" id="tType" aria-pressed="false">Type or paste</button>
+      </div>
+
+      <div id="paneSample" class="samples" role="group" aria-label="Sample labels"></div>
+
+      <div id="panePhoto" hidden>
+        <div class="row">
+          <label class="filebtn">Take or choose a photo<input id="file" type="file" accept="image/*"></label>
+          <span class="hint">The photo stays on this device.</span>
+        </div>
+        <img id="preview" class="preview" alt="Photo of the label" hidden>
+        <p id="ocrStatus" class="status" hidden role="status"></p>
+      </div>
+
+      <div class="labelbox">
+        <label for="labelText">Label text · check it matches the label</label>
+        <textarea id="labelText" spellcheck="false" autocomplete="off" maxlength="4000" placeholder="e.g. Take ONE tablet TWICE a day with food."></textarea>
+      </div>
+      <div class="row">
+        <button type="button" id="go" class="primary">Translate label</button>
+        <button type="button" id="clear">Clear</button>
+      </div>
+    </div>
+
+    <div class="panel" aria-live="polite">
+      <span class="step">Step 2 · The patient's version</span>
+      <div class="langs" role="group" aria-label="Language" id="langs"></div>
+      <p class="langs-note">The most spoken languages in Western and South Western Sydney (2021 Census), plus Persian and an option for any other language.</p>
+      <div id="out" class="out"><p class="empty">Choose a sample or add a label to see the patient's version.</p></div>
+    </div>
+  </section>
+
+  <section class="why" aria-label="Why it is built this way">
+    <div class="panel">
+      <h3>Why not just use Google Translate?</h3>
+      <p>Free translation gets medical instructions wrong, and worst in the languages Western Sydney speaks. Accuracy of Google Translate on emergency discharge instructions:</p>
+      <div class="bars" aria-label="Accuracy by language">
+        <div class="bar"><span>Spanish</span><span class="track"><span class="fill" style="width:94%"></span></span><span class="num">94%</span></div>
+        <div class="bar"><span>Chinese</span><span class="track"><span class="fill" style="width:82%"></span></span><span class="num">82%</span></div>
+        <div class="bar"><span>Farsi</span><span class="track"><span class="fill" style="width:67.5%"></span></span><span class="num">67.5%</span></div>
+        <div class="bar"><span>Armenian</span><span class="track"><span class="fill" style="width:55%"></span></span><span class="num">55%</span></div>
+      </div>
+      <p>Source: Taira et al., <i>J Gen Intern Med</i>, 2021.</p>
+    </div>
+    <div class="panel">
+      <h3>How LabelLens stays safe</h3>
+      <p>It breaks the label into dose, how often, when, food and warnings. Each part is shown with a phrase checked in advance, so nothing is invented. Anything it cannot read is shown in English with “ask your pharmacist”. Complex labels, such as reducing doses or weekly medicines, are refused on purpose.</p>
+    </div>
+    <div class="panel">
+      <h3>What is in this prototype</h3>
+      <p>14 languages: the 13 most spoken in Western and South Western Sydney plus Persian, and an “Other language” option with pictures and free interpreter details. It covers the most common dose patterns on Australian labels, with audio where the device has a voice and a check question. Translations are drafts until reviewed by native speakers.</p>
+    </div>
+  </section>
+
+  <footer>
+    <span>Prototype by Reihaneh Rahmati, Bachelor of Computer Science, Western Sydney University · Optimise 26.</span>
+    <span>Not a medical device. Always keep the original label, and ask your pharmacist if you are unsure. Sample labels and names are made up.</span>
+  </footer>
+</div>
+
+<script>
+(function(){
+"use strict";
+const $=id=>document.getElementById(id);
+
+/* ---------- Sample labels (fictional) ---------- */
+const SAMPLES=[
+ {k:"Antibiotic",s:"Amoxicillin",t:"AMOXICILLIN 500MG CAPSULES\nTake ONE capsule THREE times a day until finished.\nComplete the full course.\nKEEP OUT OF REACH OF CHILDREN\nPatient: Sara Ahmadi   Qty: 20\nSample Pharmacy, Parramatta"},
+ {k:"Diabetes",s:"Metformin",t:"METFORMIN 500MG TABLETS\nTake ONE tablet TWICE a day with food for diabetes.\nSwallow whole. Do not crush or chew.\nPatient: Minh Nguyen   Rpts: 5"},
+ {k:"Pain relief",s:"Paracetamol",t:"PARACETAMOL 500MG TABLETS\nTake 1 to 2 tablets every 4 to 6 hours when required for pain.\nDo not take more than 8 tablets in 24 hours."},
+ {k:"Allergy",s:"Cetirizine",t:"CETIRIZINE 10MG TABLETS\nTake ONE tablet at night.\nMay cause drowsiness. Do not drink alcohol."},
+ {k:"Inhaler",s:"Salbutamol",t:"SALBUTAMOL 100MCG INHALER\nInhale 2 puffs every 4 hours when required.\nShake well before use."},
+ {k:"Safety test",s:"Prednisolone",t:"PREDNISOLONE 25MG TABLETS\nTake TWO tablets daily for 3 days then ONE tablet daily for 3 days then stop.\nTake with food."}
+];
+
+/* ---------- Phrase library ----------
+   Every patient-facing sentence comes from here. Status records native-speaker review. */
+const LANGS=[
+ {code:"fa",html:"fa",name:"فارسی",en:"Persian",tts:"fa-IR",dir:"rtl",status:"Draft: awaiting native-speaker review"},
+ {code:"ar",html:"ar",name:"العربية",en:"Arabic",tts:"ar",dir:"rtl",status:"Draft: awaiting native-speaker review"},
+ {code:"zh",html:"zh-Hans",name:"简体中文",en:"Mandarin",tts:"zh-CN",dir:"ltr",status:"Draft: awaiting native-speaker review"},
+ {code:"vi",html:"vi",name:"Tiếng Việt",en:"Vietnamese",tts:"vi-VN",dir:"ltr",status:"Draft: awaiting native-speaker review"},
+ {code:"hi",html:"hi",name:"हिन्दी",en:"Hindi",tts:"hi-IN",dir:"ltr",status:"Draft: awaiting native-speaker review"},
+ {code:"zht",html:"zh-Hant",name:"繁體中文",en:"Cantonese",tts:"zh-HK",dir:"ltr",status:"Draft: awaiting native-speaker review"},
+ {code:"tl",html:"tl",name:"Filipino",en:"Tagalog",tts:"fil-PH",dir:"ltr",status:"Draft: awaiting native-speaker review"},
+ {code:"pa",html:"pa",name:"ਪੰਜਾਬੀ",en:"Punjabi",tts:"pa-IN",dir:"ltr",status:"Draft: awaiting native-speaker review"},
+ {code:"ur",html:"ur",name:"اردو",en:"Urdu",tts:"ur-PK",dir:"rtl",status:"Draft: awaiting native-speaker review"},
+ {code:"ko",html:"ko",name:"한국어",en:"Korean",tts:"ko-KR",dir:"ltr",status:"Draft: awaiting native-speaker review"},
+ {code:"ta",html:"ta",name:"தமிழ்",en:"Tamil",tts:"ta-IN",dir:"ltr",status:"Draft: awaiting native-speaker review"},
+ {code:"ne",html:"ne",name:"नेपाली",en:"Nepali",tts:"ne-NP",dir:"ltr",status:"Draft: awaiting native-speaker review"},
+ {code:"es",html:"es",name:"Español",en:"Spanish",tts:"es",dir:"ltr",status:"Draft: awaiting native-speaker review"},
+ {code:"bn",html:"bn",name:"বাংলা",en:"Bengali",tts:"bn",dir:"ltr",status:"Draft: awaiting native-speaker review"},
+ {code:"en",html:"en",name:"English",en:"English",tts:"en-AU",dir:"ltr",status:"Plain English"},
+ {code:"other",html:"en",name:"Other language",en:"Other",tts:"en-AU",dir:"ltr",status:"Pictures and English, with interpreter help"}
+];
+const isEN=c=>c==="en"||c==="other";
+const FA_DIG="۰۱۲۳۴۵۶۷۸۹";
+function num(lang,n){const s=String(n);return lang==="fa"?s.replace(/[0-9]/g,d=>FA_DIG[+d]):s;}
+
+const L={
+ en:{medicine:"Medicine",how:"How to use",amount:"How much each time",often:"How often",when:"When",food:"Food",long:"How long",usedfor:"Used for",warn:"Warnings",check:"Check you understood",listen:"Listen",
+   times:{morning:"Morning",midday:"Midday",evening:"Evening",bedtime:"Bedtime"},
+   routes:{oral:"Take by mouth",inhale:"Breathe in (inhaler)",eye:"Put in the eye",ear:"Put in the ear",skin:"Put on the skin"},
+   foods:{with:"Take with food",before:"Take before food",after:"Take after food",empty:"Take on an empty stomach"},
+   prn:"Only when needed", thin:"A thin layer", untilDone:"Until the medicine is finished",
+   q1:"How much do you take each time?", q2:"How many times a day?", right:"Correct.", wrongA:"Not quite. Look at the label again.",
+   refuse:"I can't translate this instruction safely. Please ask your pharmacist to explain it.",
+   partial:"I couldn't read this part. Ask your pharmacist:",
+   unusual:"This dose looks unusual. Check it with your pharmacist.",
+   keepLabel:"Keep the original label. Your pharmacist has the final say.",
+   noVoice:"This device has no voice for this language.",
+   W:{drowsy:"This medicine may cause drowsiness. If affected, do not drive or use machinery.",alcohol:"Do not drink alcohol while taking this medicine.",whole:"Swallow whole. Do not crush or chew.",course:"Finish the whole course, even if you feel better.",sun:"Avoid long periods in the sun.",shake:"Shake well before use.",fridge:"Keep in the fridge. Do not freeze.",children:"Keep out of reach of children.",water:"Drink plenty of water."},
+   P:{pain:"Pain",fever:"Fever",infection:"Infection",allergy:"Allergy",bp:"Blood pressure",diabetes:"Diabetes",cholesterol:"Cholesterol",asthma:"Asthma",cough:"Cough",nausea:"Nausea",sleep:"Sleep"}},
+ fa:{medicine:"دارو",how:"نحوه مصرف",amount:"مقدار هر بار",often:"چند بار",when:"چه زمانی",food:"غذا",long:"مدت مصرف",usedfor:"برای",warn:"هشدارها",check:"ببینید درست فهمیده‌اید",listen:"گوش دهید",
+   times:{morning:"صبح",midday:"ظهر",evening:"شب",bedtime:"قبل از خواب"},
+   routes:{oral:"از راه دهان بخورید",inhale:"با اسپری استنشاق کنید",eye:"در چشم بریزید",ear:"در گوش بریزید",skin:"روی پوست بمالید"},
+   foods:{with:"همراه با غذا مصرف کنید",before:"قبل از غذا مصرف کنید",after:"بعد از غذا مصرف کنید",empty:"با معده خالی مصرف کنید"},
+   prn:"فقط در صورت نیاز", thin:"یک لایه نازک", untilDone:"تا تمام شدن دارو",
+   q1:"هر بار چه مقدار مصرف می‌کنید؟", q2:"روزی چند بار؟", right:"درست است.", wrongA:"نه کاملاً. دوباره به برچسب نگاه کنید.",
+   refuse:"این دستور را نمی‌توانم با اطمینان ترجمه کنم. لطفاً از داروساز بخواهید آن را توضیح دهد.",
+   partial:"این بخش را نتوانستم بخوانم. از داروساز بپرسید:",
+   unusual:"این مقدار غیرمعمول به نظر می‌رسد. با داروساز چک کنید.",
+   keepLabel:"برچسب اصلی را نگه دارید. حرف آخر را داروساز می‌زند.",
+   W:{drowsy:"این دارو ممکن است باعث خواب‌آلودگی شود. اگر خواب‌آلود شدید، رانندگی نکنید و با دستگاه کار نکنید.",alcohol:"در مدت مصرف این دارو الکل ننوشید.",whole:"دارو را کامل قورت دهید. آن را خرد نکنید و نجوید.",course:"دوره درمان را کامل کنید، حتی اگر حالتان بهتر شد.",sun:"از ماندن طولانی زیر نور خورشید خودداری کنید.",shake:"قبل از مصرف خوب تکان دهید.",fridge:"در یخچال نگهداری کنید. منجمد نکنید.",children:"دور از دسترس کودکان نگهداری شود.",water:"آب زیاد بنوشید."},
+   P:{pain:"درد",fever:"تب",infection:"عفونت",allergy:"حساسیت",bp:"فشار خون",diabetes:"دیابت",cholesterol:"کلسترول",asthma:"آسم",cough:"سرفه",nausea:"حالت تهوع",sleep:"خواب"}},
+ ar:{medicine:"الدواء",how:"طريقة الاستعمال",amount:"الكمية في كل مرة",often:"عدد المرات",when:"متى",food:"الطعام",long:"المدة",usedfor:"لعلاج",warn:"تحذيرات",check:"تأكّد من فهمك",listen:"استمع",
+   times:{morning:"الصباح",midday:"الظهر",evening:"المساء",bedtime:"قبل النوم"},
+   routes:{oral:"عن طريق الفم",inhale:"استنشاق بالبخاخ",eye:"في العين",ear:"في الأذن",skin:"يُدهن على الجلد"},
+   foods:{with:"يؤخذ مع الطعام",before:"يؤخذ قبل الطعام",after:"يؤخذ بعد الطعام",empty:"يؤخذ على معدة فارغة"},
+   prn:"فقط عند الحاجة", thin:"طبقة رقيقة", untilDone:"حتى انتهاء الدواء",
+   q1:"كم تأخذ في كل مرة؟", q2:"كم مرة في اليوم؟", right:"صحيح.", wrongA:"ليس تماماً. انظر إلى الملصق مرة أخرى.",
+   refuse:"لا يمكنني ترجمة هذه التعليمات بشكل آمن. يُرجى أن تطلب من الصيدلي شرحها.",
+   partial:"لم أتمكن من قراءة هذا الجزء. اسأل الصيدلي:",
+   unusual:"تبدو هذه الجرعة غير معتادة. تحقّق منها مع الصيدلي.",
+   keepLabel:"احتفظ بالملصق الأصلي. الصيدلي هو صاحب الكلمة الأخيرة.",
+   W:{drowsy:"قد يسبب هذا الدواء النعاس. إذا شعرت بالنعاس فلا تقد السيارة ولا تشغّل الآلات.",alcohol:"لا تشرب الكحول أثناء تناول هذا الدواء.",whole:"ابلع الدواء كاملاً. لا تسحقه ولا تمضغه.",course:"أكمل العلاج كاملاً حتى لو شعرت بتحسّن.",sun:"تجنّب التعرّض لأشعة الشمس لفترات طويلة.",shake:"رُجّ العبوة جيداً قبل الاستعمال.",fridge:"يُحفظ في الثلاجة. لا تجمّده.",children:"يُحفظ بعيداً عن متناول الأطفال.",water:"اشرب الكثير من الماء."},
+   P:{pain:"الألم",fever:"الحمّى",infection:"العدوى",allergy:"الحساسية",bp:"ضغط الدم",diabetes:"السكري",cholesterol:"الكوليسترول",asthma:"الربو",cough:"السعال",nausea:"الغثيان",sleep:"النوم"}},
+ zh:{medicine:"药品",how:"用法",amount:"每次用量",often:"次数",when:"时间",food:"饮食",long:"疗程",usedfor:"用于",warn:"注意事项",check:"确认您已理解",listen:"收听",
+   times:{morning:"早上",midday:"中午",evening:"晚上",bedtime:"睡前"},
+   routes:{oral:"口服",inhale:"用吸入器吸入",eye:"滴入眼睛",ear:"滴入耳朵",skin:"涂抹于皮肤"},
+   foods:{with:"随餐服用",before:"饭前服用",after:"饭后服用",empty:"空腹服用"},
+   prn:"仅在需要时使用", thin:"薄涂一层", untilDone:"直到药物用完",
+   q1:"每次用多少？", q2:"每天几次？", right:"正确。", wrongA:"不太对。请再看一遍标签。",
+   refuse:"我无法安全地翻译这条说明。请让药剂师为您解释。",
+   partial:"以下部分无法识别，请咨询药剂师：",
+   unusual:"这个剂量看起来不寻常，请向药剂师确认。",
+   keepLabel:"请保留原始标签。以药剂师的说明为准。",
+   W:{drowsy:"本药可能引起嗜睡。如有嗜睡，请勿驾驶或操作机器。",alcohol:"服药期间请勿饮酒。",whole:"整片吞服，不要压碎或咀嚼。",course:"即使感觉好转，也要完成整个疗程。",sun:"避免长时间日晒。",shake:"使用前请充分摇匀。",fridge:"冷藏保存，请勿冷冻。",children:"请放在儿童接触不到的地方。",water:"多喝水。"},
+   P:{pain:"疼痛",fever:"发烧",infection:"感染",allergy:"过敏",bp:"血压",diabetes:"糖尿病",cholesterol:"胆固醇",asthma:"哮喘",cough:"咳嗽",nausea:"恶心",sleep:"睡眠"}},
+ vi:{medicine:"Thuốc",how:"Cách dùng",amount:"Mỗi lần dùng",often:"Số lần",when:"Khi nào",food:"Bữa ăn",long:"Thời gian dùng",usedfor:"Dùng cho",warn:"Cảnh báo",check:"Kiểm tra xem bạn đã hiểu chưa",listen:"Nghe",
+   times:{morning:"Sáng",midday:"Trưa",evening:"Tối",bedtime:"Trước khi ngủ"},
+   routes:{oral:"Uống",inhale:"Hít bằng bình xịt",eye:"Nhỏ vào mắt",ear:"Nhỏ vào tai",skin:"Bôi lên da"},
+   foods:{with:"Uống cùng bữa ăn",before:"Uống trước bữa ăn",after:"Uống sau bữa ăn",empty:"Uống khi bụng đói"},
+   prn:"Chỉ dùng khi cần", thin:"Một lớp mỏng", untilDone:"Cho đến khi hết thuốc",
+   q1:"Mỗi lần bạn dùng bao nhiêu?", q2:"Mỗi ngày mấy lần?", right:"Đúng rồi.", wrongA:"Chưa đúng. Hãy xem lại nhãn thuốc.",
+   refuse:"Tôi không thể dịch an toàn hướng dẫn này. Vui lòng nhờ dược sĩ giải thích.",
+   partial:"Tôi không đọc được phần này. Hãy hỏi dược sĩ:",
+   unusual:"Liều này có vẻ bất thường. Hãy kiểm tra với dược sĩ.",
+   keepLabel:"Hãy giữ nhãn gốc. Dược sĩ là người quyết định cuối cùng.",
+   W:{drowsy:"Thuốc này có thể gây buồn ngủ. Nếu bị ảnh hưởng, không lái xe hoặc vận hành máy móc.",alcohol:"Không uống rượu bia khi dùng thuốc này.",whole:"Nuốt nguyên viên. Không nghiền hoặc nhai.",course:"Dùng hết liệu trình, ngay cả khi bạn cảm thấy khỏe hơn.",sun:"Tránh ở ngoài nắng lâu.",shake:"Lắc kỹ trước khi dùng.",fridge:"Bảo quản trong tủ lạnh. Không để đông đá.",children:"Để xa tầm tay trẻ em.",water:"Uống nhiều nước."},
+   P:{pain:"Đau",fever:"Sốt",infection:"Nhiễm trùng",allergy:"Dị ứng",bp:"Huyết áp",diabetes:"Tiểu đường",cholesterol:"Mỡ máu",asthma:"Hen suyễn",cough:"Ho",nausea:"Buồn nôn",sleep:"Giấc ngủ"}}
+};
+
+/* Unit words. Arabic needs singular / dual / plural; the others do not change after a number. */
+const UNITS={
+ tablet:{en:["tablet","tablets"],fa:"قرص",zh:"片",vi:"viên",ar:["قرص","قرصان","أقراص"],arOne:"قرص واحد",half:{en:"Half a tablet",fa:"نصف قرص",ar:"نصف قرص",zh:"半片",vi:"Nửa viên"}},
+ capsule:{en:["capsule","capsules"],fa:"کپسول",zh:"粒",vi:"viên nang",ar:["كبسولة","كبسولتان","كبسولات"],arOne:"كبسولة واحدة",half:null},
+ puff:{en:["puff","puffs"],fa:"پاف",zh:"喷",vi:"nhát xịt",ar:["بخّة","بخّتان","بخّات"],arOne:"بخّة واحدة",half:null},
+ drop:{en:["drop","drops"],fa:"قطره",zh:"滴",vi:"giọt",ar:["قطرة","قطرتان","قطرات"],arOne:"قطرة واحدة",half:null},
+ ml:{en:["mL","mL"],fa:"میلی‌لیتر",zh:"毫升",vi:"ml",ar:["مل","مل","مل"],arOne:"1 مل",half:null},
+ sachet:{en:["sachet","sachets"],fa:"ساشه",zh:"袋",vi:"gói",ar:["كيس","كيسان","أكياس"],arOne:"كيس واحد",half:null}
+};
+function amountText(lang,unit,dose){
+  if(lang==="other") lang="en";
+  if(GEN[lang]) return genAmount(GEN[lang],unit,dose);
+  const u=UNITS[unit];
+  if(dose.half){return u.half?u.half[lang]:null;}
+  const a=dose.min,b=dose.max;
+  if(lang==="en"){const w=(b>1||a>1)?u.en[1]:u.en[0];return a===b?`${a} ${w}`:`${a} to ${b} ${u.en[1]}`;}
+  if(lang==="fa"){return a===b?`${num("fa",a)} ${u.fa}`:`${num("fa",a)} تا ${num("fa",b)} ${u.fa}`;}
+  if(lang==="zh"){return a===b?`${a} ${u.zh}`:`${a} 至 ${b} ${u.zh}`;}
+  if(lang==="vi"){return a===b?`${a} ${u.vi}`:`${a} đến ${b} ${u.vi}`;}
+  if(lang==="ar"){
+    if(a!==b){ if(unit==="ml") return `من ${a} إلى ${b} مل`; if(a===1&&b===2) return `${u.arOne} أو ${u.ar[1]}`; return `من ${a} إلى ${b} ${u.ar[2]}`; }
+    if(unit==="ml") return `${a} مل`;
+    if(a===1) return u.arOne; if(a===2) return u.ar[1];
+    if(a<=10) return `${a} ${u.ar[2]}`; return `${a} ${u.ar[0]}`;
+  }
+}
+function oftenText(lang,f){
+  if(lang==="other") lang="en";
+  if(GEN[lang]) return genOften(GEN[lang],f);
+  if(f.perDay){const n=f.perDay;
+    return {en:n===1?"Once a day":n===2?"Twice a day":`${n} times a day`,fa:`روزی ${num("fa",n)} بار`,
+      ar:n===1?"مرة واحدة في اليوم":n===2?"مرتين في اليوم":`${n} مرات في اليوم`,zh:`每天 ${n} 次`,vi:`Ngày ${n} lần`}[lang];}
+  if(f.every){const a=f.every[0],b=f.every[1];
+    if(a===b) return {en:`Every ${a} hours`,fa:`هر ${num("fa",a)} ساعت یک بار`,ar:a<=10?`كل ${a} ساعات`:`كل ${a} ساعة`,zh:`每 ${a} 小时一次`,vi:`Cứ ${a} giờ một lần`}[lang];
+    return {en:`Every ${a} to ${b} hours`,fa:`هر ${num("fa",a)} تا ${num("fa",b)} ساعت یک بار`,ar:`كل ${a} إلى ${b} ساعات`,zh:`每 ${a} 至 ${b} 小时一次`,vi:`Cứ ${a} đến ${b} giờ một lần`}[lang];}
+  return null;
+}
+function durText(lang,d){
+  if(lang==="other") lang="en";
+  if(GEN[lang]) return genDur(GEN[lang],d);
+  if(d.until) return L[lang].untilDone;
+  const n=d.n,w=d.unit==="week";
+  if(lang==="en") return `For ${n} ${w?(n===1?"week":"weeks"):(n===1?"day":"days")}`;
+  if(lang==="fa") return `به مدت ${num("fa",n)} ${w?"هفته":"روز"}`;
+  if(lang==="zh") return w?`连续 ${n} 周`:`连续 ${n} 天`;
+  if(lang==="vi") return w?`Trong ${n} tuần`:`Trong ${n} ngày`;
+  if(lang==="ar"){ if(w) return n===1?"لمدة أسبوع واحد":n===2?"لمدة أسبوعين":n<=10?`لمدة ${n} أسابيع`:`لمدة ${n} أسبوعاً`;
+    return n===1?"لمدة يوم واحد":n===2?"لمدة يومين":n<=10?`لمدة ${n} أيام`:`لمدة ${n} يوماً`;}
+}
+function maxText(lang,unit,n){
+  if(lang==="other") lang="en";
+  if(GEN[lang]) return fill(GEN[lang].t.max,{x:genAmount(GEN[lang],unit,{min:n,max:n})});
+  const amt=amountText(lang,unit,{min:n,max:n});
+  return {en:`No more than ${amt} in 24 hours`,fa:`حداکثر ${amt} در ${num("fa",24)} ساعت`,ar:`لا تتجاوز ${amt} خلال 24 ساعة`,zh:`24 小时内不超过 ${amt}`,vi:`Không quá ${amt} trong 24 giờ`}[lang];
+}
+
+/* ---------- More Western Sydney languages (template-based) ----------
+   Each entry: phrases + unit words [one, many] + sentence templates. All drafts until reviewed. */
+const GEN={
+ zht:{u:{tablet:["片","片"],capsule:["粒","粒"],puff:["噴","噴"],drop:["滴","滴"],ml:["毫升","毫升"],sachet:["包","包"]},half:"半片",
+   t:{amt:"{n} {u}",range:"{a} 至 {b} {u}",d1:"每天 1 次",d2:"每天 2 次",dn:"每天 {n} 次",ev:"每 {a} 小時一次",evr:"每 {a} 至 {b} 小時一次",day1:"連續 1 天",dayn:"連續 {n} 天",wk1:"連續 1 星期",wkn:"連續 {n} 星期",max:"24 小時內不超過 {x}"},
+   L:{medicine:"藥物",how:"用法",amount:"每次用量",often:"次數",when:"時間",food:"飲食",long:"療程",usedfor:"用於",warn:"注意事項",check:"確認您已明白",listen:"收聽",
+   times:{morning:"早上",midday:"中午",evening:"晚上",bedtime:"睡前"},routes:{oral:"口服",inhale:"用吸入器吸入",eye:"滴入眼睛",ear:"滴入耳朵",skin:"塗抹於皮膚"},
+   foods:{with:"隨餐服用",before:"飯前服用",after:"飯後服用",empty:"空腹服用"},prn:"只在需要時使用",thin:"薄塗一層",untilDone:"直至藥物用完",
+   q1:"每次用多少？",q2:"每天幾次？",right:"正確。",wrongA:"不太對。請再看一遍標籤。",
+   refuse:"我無法安全地翻譯這項說明。請藥劑師為您解釋。",partial:"以下部分無法識別，請向藥劑師查詢：",unusual:"這個劑量看來不尋常，請向藥劑師確認。",keepLabel:"請保留原有標籤。以藥劑師的指示為準。",
+   W:{drowsy:"本藥可能引致睡意。如受影響，請勿駕駛或操作機器。",alcohol:"服藥期間請勿飲酒。",whole:"整粒吞服，切勿壓碎或咀嚼。",course:"即使感覺好轉，也要完成整個療程。",sun:"避免長時間曝曬。",shake:"使用前請充分搖勻。",fridge:"冷藏保存，切勿冷凍。",children:"請放在兒童接觸不到的地方。",water:"多喝水。"},
+   P:{pain:"疼痛",fever:"發燒",infection:"感染",allergy:"過敏",bp:"血壓",diabetes:"糖尿病",cholesterol:"膽固醇",asthma:"哮喘",cough:"咳嗽",nausea:"噁心",sleep:"睡眠"}}},
+ hi:{u:{tablet:["गोली","गोलियाँ"],capsule:["कैप्सूल","कैप्सूल"],puff:["पफ़","पफ़"],drop:["बूँद","बूँदें"],ml:["मि.ली.","मि.ली."],sachet:["पाउच","पाउच"]},half:"आधी गोली",
+   t:{amt:"{n} {u}",range:"{a} से {b} {u}",d1:"दिन में एक बार",d2:"दिन में दो बार",dn:"दिन में {n} बार",ev:"हर {a} घंटे में",evr:"हर {a} से {b} घंटे में",day1:"1 दिन तक",dayn:"{n} दिन तक",wk1:"1 हफ़्ते तक",wkn:"{n} हफ़्ते तक",max:"24 घंटे में ज़्यादा से ज़्यादा {x}"},
+   L:{medicine:"दवा",how:"कैसे लें",amount:"हर बार कितनी",often:"कितनी बार",when:"कब",food:"भोजन",long:"कितने दिन",usedfor:"किसके लिए",warn:"चेतावनी",check:"जाँचें कि आप समझ गए",listen:"सुनें",
+   times:{morning:"सुबह",midday:"दोपहर",evening:"शाम",bedtime:"सोने से पहले"},routes:{oral:"मुँह से लें",inhale:"इनहेलर से साँस में लें",eye:"आँख में डालें",ear:"कान में डालें",skin:"त्वचा पर लगाएँ"},
+   foods:{with:"भोजन के साथ लें",before:"भोजन से पहले लें",after:"भोजन के बाद लें",empty:"खाली पेट लें"},prn:"केवल ज़रूरत होने पर",thin:"एक पतली परत",untilDone:"दवा ख़त्म होने तक",
+   q1:"आप हर बार कितनी लेते हैं?",q2:"दिन में कितनी बार?",right:"सही है।",wrongA:"पूरी तरह सही नहीं। लेबल को फिर से देखें।",
+   refuse:"मैं इस निर्देश का सुरक्षित अनुवाद नहीं कर सकता। कृपया अपने फ़ार्मासिस्ट से इसे समझाने के लिए कहें।",partial:"मैं यह हिस्सा नहीं पढ़ सका। अपने फ़ार्मासिस्ट से पूछें:",unusual:"यह खुराक असामान्य लगती है। अपने फ़ार्मासिस्ट से जाँच करवाएँ।",keepLabel:"मूल लेबल संभाल कर रखें। अंतिम निर्णय आपके फ़ार्मासिस्ट का है।",
+   W:{drowsy:"यह दवा नींद ला सकती है। अगर असर हो, तो गाड़ी या मशीन न चलाएँ।",alcohol:"यह दवा लेते समय शराब न पिएँ।",whole:"पूरी निगलें। कुचलें या चबाएँ नहीं।",course:"पूरा कोर्स ख़त्म करें, भले ही आप बेहतर महसूस करें।",sun:"लंबे समय तक धूप में रहने से बचें।",shake:"इस्तेमाल से पहले अच्छी तरह हिलाएँ।",fridge:"फ़्रिज में रखें। जमने न दें।",children:"बच्चों की पहुँच से दूर रखें।",water:"खूब पानी पिएँ।"},
+   P:{pain:"दर्द",fever:"बुखार",infection:"संक्रमण",allergy:"एलर्जी",bp:"ब्लड प्रेशर",diabetes:"डायबिटीज़",cholesterol:"कोलेस्ट्रॉल",asthma:"अस्थमा",cough:"खाँसी",nausea:"मतली",sleep:"नींद"}}},
+ tl:{u:{tablet:["tableta","tableta"],capsule:["kapsula","kapsula"],puff:["buga","buga"],drop:["patak","patak"],ml:["mL","mL"],sachet:["sachet","sachet"]},half:"Kalahating tableta",
+   t:{amt:"{n} {u}",range:"{a} hanggang {b} {u}",d1:"Isang beses sa isang araw",d2:"Dalawang beses sa isang araw",dn:"{n} beses sa isang araw",ev:"Tuwing {a} oras",evr:"Tuwing {a} hanggang {b} oras",day1:"Sa loob ng 1 araw",dayn:"Sa loob ng {n} araw",wk1:"Sa loob ng 1 linggo",wkn:"Sa loob ng {n} linggo",max:"Hindi hihigit sa {x} sa loob ng 24 oras"},
+   L:{medicine:"Gamot",how:"Paano gamitin",amount:"Gaano karami bawat beses",often:"Gaano kadalas",when:"Kailan",food:"Pagkain",long:"Gaano katagal",usedfor:"Para sa",warn:"Mga babala",check:"Tingnan kung naintindihan mo",listen:"Pakinggan",
+   times:{morning:"Umaga",midday:"Tanghali",evening:"Gabi",bedtime:"Bago matulog"},routes:{oral:"Inumin",inhale:"Langhapin gamit ang inhaler",eye:"Ipatak sa mata",ear:"Ipatak sa tainga",skin:"Ipahid sa balat"},
+   foods:{with:"Inumin kasabay ng pagkain",before:"Inumin bago kumain",after:"Inumin pagkatapos kumain",empty:"Inumin nang walang laman ang tiyan"},prn:"Kapag kailangan lamang",thin:"Manipis na pahid",untilDone:"Hanggang maubos ang gamot",
+   q1:"Gaano karami ang iniinom mo bawat beses?",q2:"Ilang beses sa isang araw?",right:"Tama.",wrongA:"Hindi pa tama. Tingnan muli ang label.",
+   refuse:"Hindi ko ito maisasalin nang ligtas. Pakihingi sa iyong parmasyutiko na ipaliwanag ito.",partial:"Hindi ko nabasa ang bahaging ito. Magtanong sa iyong parmasyutiko:",unusual:"Mukhang hindi karaniwan ang dosis na ito. Itanong sa iyong parmasyutiko.",keepLabel:"Itago ang orihinal na label. Ang parmasyutiko ang may huling salita.",
+   W:{drowsy:"Maaaring magdulot ng antok ang gamot na ito. Kung inaantok, huwag magmaneho o gumamit ng makina.",alcohol:"Huwag uminom ng alak habang umiinom ng gamot na ito.",whole:"Lunukin nang buo. Huwag durugin o nguyain.",course:"Tapusin ang buong gamutan, kahit gumaan na ang pakiramdam mo.",sun:"Iwasang magtagal sa ilalim ng araw.",shake:"Kalugin nang mabuti bago gamitin.",fridge:"Itago sa refrigerator. Huwag i-freeze.",children:"Ilayo sa abot ng mga bata.",water:"Uminom ng maraming tubig."},
+   P:{pain:"Pananakit",fever:"Lagnat",infection:"Impeksyon",allergy:"Allergy",bp:"Presyon ng dugo",diabetes:"Diabetes",cholesterol:"Kolesterol",asthma:"Hika",cough:"Ubo",nausea:"Pagduduwal",sleep:"Pagtulog"}}},
+ pa:{u:{tablet:["ਗੋਲੀ","ਗੋਲੀਆਂ"],capsule:["ਕੈਪਸੂਲ","ਕੈਪਸੂਲ"],puff:["ਪਫ਼","ਪਫ਼"],drop:["ਬੂੰਦ","ਬੂੰਦਾਂ"],ml:["ਮਿ.ਲੀ.","ਮਿ.ਲੀ."],sachet:["ਪਾਊਚ","ਪਾਊਚ"]},half:"ਅੱਧੀ ਗੋਲੀ",
+   t:{amt:"{n} {u}",range:"{a} ਤੋਂ {b} {u}",d1:"ਦਿਨ ਵਿੱਚ ਇੱਕ ਵਾਰ",d2:"ਦਿਨ ਵਿੱਚ ਦੋ ਵਾਰ",dn:"ਦਿਨ ਵਿੱਚ {n} ਵਾਰ",ev:"ਹਰ {a} ਘੰਟੇ ਬਾਅਦ",evr:"ਹਰ {a} ਤੋਂ {b} ਘੰਟੇ ਬਾਅਦ",day1:"1 ਦਿਨ ਲਈ",dayn:"{n} ਦਿਨਾਂ ਲਈ",wk1:"1 ਹਫ਼ਤੇ ਲਈ",wkn:"{n} ਹਫ਼ਤਿਆਂ ਲਈ",max:"24 ਘੰਟਿਆਂ ਵਿੱਚ {x} ਤੋਂ ਵੱਧ ਨਹੀਂ"},
+   L:{medicine:"ਦਵਾਈ",how:"ਕਿਵੇਂ ਲੈਣੀ ਹੈ",amount:"ਹਰ ਵਾਰ ਕਿੰਨੀ",often:"ਕਿੰਨੀ ਵਾਰ",when:"ਕਦੋਂ",food:"ਖਾਣਾ",long:"ਕਿੰਨੇ ਦਿਨ",usedfor:"ਕਿਸ ਲਈ",warn:"ਚੇਤਾਵਨੀ",check:"ਜਾਂਚ ਕਰੋ ਕਿ ਤੁਸੀਂ ਸਮਝ ਗਏ ਹੋ",listen:"ਸੁਣੋ",
+   times:{morning:"ਸਵੇਰੇ",midday:"ਦੁਪਹਿਰੇ",evening:"ਸ਼ਾਮ ਨੂੰ",bedtime:"ਸੌਣ ਤੋਂ ਪਹਿਲਾਂ"},routes:{oral:"ਮੂੰਹ ਰਾਹੀਂ ਲਓ",inhale:"ਇਨਹੇਲਰ ਨਾਲ ਸਾਹ ਰਾਹੀਂ ਲਓ",eye:"ਅੱਖ ਵਿੱਚ ਪਾਓ",ear:"ਕੰਨ ਵਿੱਚ ਪਾਓ",skin:"ਚਮੜੀ 'ਤੇ ਲਗਾਓ"},
+   foods:{with:"ਖਾਣੇ ਨਾਲ ਲਓ",before:"ਖਾਣੇ ਤੋਂ ਪਹਿਲਾਂ ਲਓ",after:"ਖਾਣੇ ਤੋਂ ਬਾਅਦ ਲਓ",empty:"ਖਾਲੀ ਪੇਟ ਲਓ"},prn:"ਸਿਰਫ਼ ਲੋੜ ਪੈਣ 'ਤੇ",thin:"ਇੱਕ ਪਤਲੀ ਪਰਤ",untilDone:"ਦਵਾਈ ਖ਼ਤਮ ਹੋਣ ਤੱਕ",
+   q1:"ਤੁਸੀਂ ਹਰ ਵਾਰ ਕਿੰਨੀ ਲੈਂਦੇ ਹੋ?",q2:"ਦਿਨ ਵਿੱਚ ਕਿੰਨੀ ਵਾਰ?",right:"ਸਹੀ ਹੈ।",wrongA:"ਪੂਰੀ ਤਰ੍ਹਾਂ ਸਹੀ ਨਹੀਂ। ਲੇਬਲ ਨੂੰ ਦੁਬਾਰਾ ਦੇਖੋ।",
+   refuse:"ਮੈਂ ਇਸ ਹਦਾਇਤ ਦਾ ਸੁਰੱਖਿਅਤ ਅਨੁਵਾਦ ਨਹੀਂ ਕਰ ਸਕਦਾ। ਕਿਰਪਾ ਕਰਕੇ ਆਪਣੇ ਫਾਰਮਾਸਿਸਟ ਨੂੰ ਇਹ ਸਮਝਾਉਣ ਲਈ ਕਹੋ।",partial:"ਮੈਂ ਇਹ ਹਿੱਸਾ ਨਹੀਂ ਪੜ੍ਹ ਸਕਿਆ। ਆਪਣੇ ਫਾਰਮਾਸਿਸਟ ਨੂੰ ਪੁੱਛੋ:",unusual:"ਇਹ ਖੁਰਾਕ ਅਸਧਾਰਨ ਲੱਗਦੀ ਹੈ। ਆਪਣੇ ਫਾਰਮਾਸਿਸਟ ਨਾਲ ਜਾਂਚ ਕਰੋ।",keepLabel:"ਅਸਲ ਲੇਬਲ ਸੰਭਾਲ ਕੇ ਰੱਖੋ। ਆਖਰੀ ਫ਼ੈਸਲਾ ਤੁਹਾਡੇ ਫਾਰਮਾਸਿਸਟ ਦਾ ਹੈ।",
+   W:{drowsy:"ਇਹ ਦਵਾਈ ਨੀਂਦ ਲਿਆ ਸਕਦੀ ਹੈ। ਜੇ ਅਸਰ ਹੋਵੇ, ਤਾਂ ਗੱਡੀ ਜਾਂ ਮਸ਼ੀਨ ਨਾ ਚਲਾਓ।",alcohol:"ਇਹ ਦਵਾਈ ਲੈਂਦੇ ਸਮੇਂ ਸ਼ਰਾਬ ਨਾ ਪੀਓ।",whole:"ਪੂਰੀ ਨਿਗਲੋ। ਤੋੜੋ ਜਾਂ ਚਬਾਓ ਨਾ।",course:"ਪੂਰਾ ਕੋਰਸ ਖ਼ਤਮ ਕਰੋ, ਭਾਵੇਂ ਤੁਸੀਂ ਠੀਕ ਮਹਿਸੂਸ ਕਰੋ।",sun:"ਲੰਮੇ ਸਮੇਂ ਤੱਕ ਧੁੱਪ ਵਿੱਚ ਰਹਿਣ ਤੋਂ ਬਚੋ।",shake:"ਵਰਤਣ ਤੋਂ ਪਹਿਲਾਂ ਚੰਗੀ ਤਰ੍ਹਾਂ ਹਿਲਾਓ।",fridge:"ਫਰਿੱਜ ਵਿੱਚ ਰੱਖੋ। ਜਮਾਓ ਨਾ।",children:"ਬੱਚਿਆਂ ਦੀ ਪਹੁੰਚ ਤੋਂ ਦੂਰ ਰੱਖੋ।",water:"ਖੂਬ ਪਾਣੀ ਪੀਓ।"},
+   P:{pain:"ਦਰਦ",fever:"ਬੁਖ਼ਾਰ",infection:"ਇਨਫੈਕਸ਼ਨ",allergy:"ਐਲਰਜੀ",bp:"ਬਲੱਡ ਪ੍ਰੈਸ਼ਰ",diabetes:"ਸ਼ੂਗਰ",cholesterol:"ਕੋਲੈਸਟ੍ਰੋਲ",asthma:"ਦਮਾ",cough:"ਖੰਘ",nausea:"ਜੀ ਕੱਚਾ ਹੋਣਾ",sleep:"ਨੀਂਦ"}}},
+ ur:{u:{tablet:["گولی","گولیاں"],capsule:["کیپسول","کیپسول"],puff:["پف","پف"],drop:["قطرہ","قطرے"],ml:["ملی لیٹر","ملی لیٹر"],sachet:["ساشے","ساشے"]},half:"آدھی گولی",
+   t:{amt:"{n} {u}",range:"{a} سے {b} {u}",d1:"دن میں ایک بار",d2:"دن میں دو بار",dn:"دن میں {n} بار",ev:"ہر {a} گھنٹے بعد",evr:"ہر {a} سے {b} گھنٹے بعد",day1:"1 دن تک",dayn:"{n} دن تک",wk1:"1 ہفتے تک",wkn:"{n} ہفتے تک",max:"24 گھنٹوں میں زیادہ سے زیادہ {x}"},
+   L:{medicine:"دوا",how:"استعمال کا طریقہ",amount:"ہر بار کتنی",often:"کتنی بار",when:"کب",food:"کھانا",long:"کتنے دن",usedfor:"کس لیے",warn:"انتباہ",check:"دیکھیں کہ آپ سمجھ گئے",listen:"سنیں",
+   times:{morning:"صبح",midday:"دوپہر",evening:"شام",bedtime:"سونے سے پہلے"},routes:{oral:"منہ سے لیں",inhale:"انہیلر سے سانس کے ذریعے لیں",eye:"آنکھ میں ڈالیں",ear:"کان میں ڈالیں",skin:"جلد پر لگائیں"},
+   foods:{with:"کھانے کے ساتھ لیں",before:"کھانے سے پہلے لیں",after:"کھانے کے بعد لیں",empty:"خالی پیٹ لیں"},prn:"صرف ضرورت پڑنے پر",thin:"ایک پتلی تہہ",untilDone:"دوا ختم ہونے تک",
+   q1:"آپ ہر بار کتنی لیتے ہیں؟",q2:"دن میں کتنی بار؟",right:"درست ہے۔",wrongA:"مکمل درست نہیں۔ لیبل دوبارہ دیکھیں۔",
+   refuse:"میں اس ہدایت کا محفوظ ترجمہ نہیں کر سکتا۔ براہ کرم اپنے فارماسسٹ سے اس کی وضاحت کرنے کو کہیں۔",partial:"میں یہ حصہ نہیں پڑھ سکا۔ اپنے فارماسسٹ سے پوچھیں:",unusual:"یہ خوراک غیر معمولی لگتی ہے۔ اپنے فارماسسٹ سے تصدیق کریں۔",keepLabel:"اصل لیبل سنبھال کر رکھیں۔ آخری فیصلہ آپ کے فارماسسٹ کا ہے۔",
+   W:{drowsy:"یہ دوا غنودگی پیدا کر سکتی ہے۔ اگر اثر ہو تو گاڑی یا مشین نہ چلائیں۔",alcohol:"یہ دوا لیتے وقت شراب نہ پئیں۔",whole:"پوری نگلیں۔ توڑیں یا چبائیں نہیں۔",course:"علاج کا پورا کورس مکمل کریں، چاہے آپ بہتر محسوس کریں۔",sun:"دیر تک دھوپ میں رہنے سے بچیں۔",shake:"استعمال سے پہلے اچھی طرح ہلائیں۔",fridge:"فریج میں رکھیں۔ جمنے نہ دیں۔",children:"بچوں کی پہنچ سے دور رکھیں۔",water:"خوب پانی پئیں۔"},
+   P:{pain:"درد",fever:"بخار",infection:"انفیکشن",allergy:"الرجی",bp:"بلڈ پریشر",diabetes:"ذیابیطس",cholesterol:"کولیسٹرول",asthma:"دمہ",cough:"کھانسی",nausea:"متلی",sleep:"نیند"}}},
+ ko:{u:{tablet:["정","정"],capsule:["캡슐","캡슐"],puff:["회 흡입","회 흡입"],drop:["방울","방울"],ml:["mL","mL"],sachet:["포","포"]},half:"반 정",
+   t:{amt:"{n}{u}",range:"{a}~{b}{u}",d1:"하루 1번",d2:"하루 2번",dn:"하루 {n}번",ev:"{a}시간마다",evr:"{a}~{b}시간마다",day1:"1일 동안",dayn:"{n}일 동안",wk1:"1주 동안",wkn:"{n}주 동안",max:"24시간 동안 최대 {x}"},
+   L:{medicine:"약",how:"사용 방법",amount:"1회 복용량",often:"횟수",when:"복용 시간",food:"식사",long:"기간",usedfor:"용도",warn:"주의 사항",check:"이해했는지 확인하세요",listen:"듣기",
+   times:{morning:"아침",midday:"점심",evening:"저녁",bedtime:"자기 전"},routes:{oral:"입으로 복용",inhale:"흡입기로 흡입",eye:"눈에 넣기",ear:"귀에 넣기",skin:"피부에 바르기"},
+   foods:{with:"식사와 함께 복용",before:"식전에 복용",after:"식후에 복용",empty:"공복에 복용"},prn:"필요할 때만",thin:"얇게 한 겹",untilDone:"약을 다 먹을 때까지",
+   q1:"한 번에 얼마나 복용하나요?",q2:"하루에 몇 번인가요?",right:"맞습니다.",wrongA:"아닙니다. 라벨을 다시 확인하세요.",
+   refuse:"이 지시 사항은 안전하게 번역할 수 없습니다. 약사에게 설명을 요청하세요.",partial:"이 부분은 읽을 수 없었습니다. 약사에게 문의하세요:",unusual:"이 복용량은 일반적이지 않습니다. 약사에게 확인하세요.",keepLabel:"원래 라벨을 보관하세요. 최종 판단은 약사가 합니다.",
+   W:{drowsy:"이 약은 졸음을 유발할 수 있습니다. 졸리면 운전하거나 기계를 조작하지 마세요.",alcohol:"이 약을 복용하는 동안 술을 마시지 마세요.",whole:"통째로 삼키세요. 부수거나 씹지 마세요.",course:"증상이 좋아져도 처방된 기간 동안 끝까지 복용하세요.",sun:"오랫동안 햇볕에 노출되지 않도록 하세요.",shake:"사용 전에 잘 흔드세요.",fridge:"냉장 보관하세요. 얼리지 마세요.",children:"어린이의 손이 닿지 않는 곳에 보관하세요.",water:"물을 충분히 마시세요."},
+   P:{pain:"통증",fever:"발열",infection:"감염",allergy:"알레르기",bp:"혈압",diabetes:"당뇨병",cholesterol:"콜레스테롤",asthma:"천식",cough:"기침",nausea:"메스꺼움",sleep:"수면"}}},
+ ta:{u:{tablet:["மாத்திரை","மாத்திரைகள்"],capsule:["கேப்ஸ்யூல்","கேப்ஸ்யூல்கள்"],puff:["பஃப்","பஃப்கள்"],drop:["சொட்டு","சொட்டுகள்"],ml:["மி.லி.","மி.லி."],sachet:["சாஷே","சாஷேக்கள்"]},half:"அரை மாத்திரை",
+   t:{amt:"{n} {u}",range:"{a} முதல் {b} {u}",d1:"ஒரு நாளைக்கு ஒரு முறை",d2:"ஒரு நாளைக்கு இரண்டு முறை",dn:"ஒரு நாளைக்கு {n} முறை",ev:"{a} மணி நேரத்திற்கு ஒருமுறை",evr:"{a} முதல் {b} மணி நேரத்திற்கு ஒருமுறை",day1:"1 நாளுக்கு",dayn:"{n} நாட்களுக்கு",wk1:"1 வாரத்திற்கு",wkn:"{n} வாரங்களுக்கு",max:"24 மணி நேரத்தில் அதிகபட்சம் {x}"},
+   L:{medicine:"மருந்து",how:"பயன்படுத்தும் முறை",amount:"ஒவ்வொரு முறையும் எவ்வளவு",often:"எத்தனை முறை",when:"எப்போது",food:"உணவு",long:"எத்தனை நாட்கள்",usedfor:"எதற்காக",warn:"எச்சரிக்கைகள்",check:"நீங்கள் புரிந்துகொண்டீர்களா என சரிபாருங்கள்",listen:"கேளுங்கள்",
+   times:{morning:"காலை",midday:"மதியம்",evening:"மாலை",bedtime:"தூங்கும் முன்"},routes:{oral:"வாய் வழியாக எடுத்துக்கொள்ளவும்",inhale:"இன்ஹேலர் மூலம் உள்ளிழுக்கவும்",eye:"கண்ணில் விடவும்",ear:"காதில் விடவும்",skin:"தோலில் தடவவும்"},
+   foods:{with:"உணவுடன் எடுத்துக்கொள்ளவும்",before:"உணவுக்கு முன் எடுத்துக்கொள்ளவும்",after:"உணவுக்குப் பின் எடுத்துக்கொள்ளவும்",empty:"வெறும் வயிற்றில் எடுத்துக்கொள்ளவும்"},prn:"தேவைப்படும்போது மட்டும்",thin:"மெல்லிய அடுக்கு",untilDone:"மருந்து தீரும் வரை",
+   q1:"ஒவ்வொரு முறையும் எவ்வளவு எடுத்துக்கொள்வீர்கள்?",q2:"ஒரு நாளில் எத்தனை முறை?",right:"சரி.",wrongA:"சரியில்லை. லேபிளை மீண்டும் பாருங்கள்.",
+   refuse:"இந்த அறிவுறுத்தலைப் பாதுகாப்பாக மொழிபெயர்க்க முடியவில்லை. இதை விளக்கும்படி உங்கள் மருந்தாளரிடம் கேளுங்கள்.",partial:"இந்தப் பகுதியைப் படிக்க முடியவில்லை. உங்கள் மருந்தாளரிடம் கேளுங்கள்:",unusual:"இந்த அளவு வழக்கத்திற்கு மாறாகத் தெரிகிறது. உங்கள் மருந்தாளரிடம் சரிபாருங்கள்.",keepLabel:"அசல் லேபிளை வைத்திருங்கள். இறுதி முடிவு உங்கள் மருந்தாளருடையது.",
+   W:{drowsy:"இந்த மருந்து தூக்கக் கலக்கத்தை ஏற்படுத்தலாம். பாதிப்பு இருந்தால், வாகனம் ஓட்டவோ இயந்திரங்களை இயக்கவோ வேண்டாம்.",alcohol:"இந்த மருந்தை உட்கொள்ளும்போது மது அருந்த வேண்டாம்.",whole:"முழுமையாக விழுங்கவும். நசுக்கவோ மெல்லவோ வேண்டாம்.",course:"நீங்கள் நலமாக உணர்ந்தாலும், முழு சிகிச்சையையும் முடிக்கவும்.",sun:"நீண்ட நேரம் வெயிலில் இருப்பதைத் தவிர்க்கவும்.",shake:"பயன்படுத்தும் முன் நன்றாகக் குலுக்கவும்.",fridge:"குளிர்சாதனப் பெட்டியில் வைக்கவும். உறைய வைக்க வேண்டாம்.",children:"குழந்தைகளுக்கு எட்டாத இடத்தில் வைக்கவும்.",water:"நிறைய தண்ணீர் குடிக்கவும்."},
+   P:{pain:"வலி",fever:"காய்ச்சல்",infection:"தொற்று",allergy:"ஒவ்வாமை",bp:"இரத்த அழுத்தம்",diabetes:"நீரிழிவு",cholesterol:"கொலஸ்ட்ரால்",asthma:"ஆஸ்துமா",cough:"இருமல்",nausea:"குமட்டல்",sleep:"தூக்கம்"}}},
+ ne:{u:{tablet:["चक्की","चक्की"],capsule:["क्याप्सुल","क्याप्सुल"],puff:["पफ","पफ"],drop:["थोपा","थोपा"],ml:["मि.लि.","मि.लि."],sachet:["प्याकेट","प्याकेट"]},half:"आधा चक्की",
+   t:{amt:"{n} {u}",range:"{a} देखि {b} {u}",d1:"दिनमा एक पटक",d2:"दिनमा दुई पटक",dn:"दिनमा {n} पटक",ev:"हरेक {a} घण्टामा",evr:"हरेक {a} देखि {b} घण्टामा",day1:"1 दिनसम्म",dayn:"{n} दिनसम्म",wk1:"1 हप्तासम्म",wkn:"{n} हप्तासम्म",max:"24 घण्टामा {x} भन्दा बढी नखानुहोस्"},
+   L:{medicine:"औषधि",how:"प्रयोग गर्ने तरिका",amount:"प्रत्येक पटक कति",often:"कति पटक",when:"कहिले",food:"खाना",long:"कति दिन",usedfor:"केका लागि",warn:"चेतावनी",check:"तपाईंले बुझ्नुभयो कि जाँच्नुहोस्",listen:"सुन्नुहोस्",
+   times:{morning:"बिहान",midday:"दिउँसो",evening:"बेलुका",bedtime:"सुत्नुअघि"},routes:{oral:"मुखबाट खानुहोस्",inhale:"इनहेलरबाट सास तान्नुहोस्",eye:"आँखामा हाल्नुहोस्",ear:"कानमा हाल्नुहोस्",skin:"छालामा लगाउनुहोस्"},
+   foods:{with:"खानासँगै खानुहोस्",before:"खाना अघि खानुहोस्",after:"खाना पछि खानुहोस्",empty:"खाली पेटमा खानुहोस्"},prn:"आवश्यक परेमा मात्र",thin:"पातलो तह",untilDone:"औषधि नसकिएसम्म",
+   q1:"तपाईं प्रत्येक पटक कति खानुहुन्छ?",q2:"दिनमा कति पटक?",right:"सही हो।",wrongA:"पूरा सही भएन। लेबल फेरि हेर्नुहोस्।",
+   refuse:"म यो निर्देशनको सुरक्षित अनुवाद गर्न सक्दिनँ। कृपया आफ्नो फार्मासिस्टलाई यो बुझाइदिन भन्नुहोस्।",partial:"मैले यो भाग पढ्न सकिनँ। आफ्नो फार्मासिस्टलाई सोध्नुहोस्:",unusual:"यो मात्रा असामान्य देखिन्छ। आफ्नो फार्मासिस्टसँग जाँच गर्नुहोस्।",keepLabel:"मूल लेबल राख्नुहोस्। अन्तिम निर्णय तपाईंको फार्मासिस्टको हो।",
+   W:{drowsy:"यो औषधिले निद्रा लाग्न सक्छ। असर भएमा गाडी वा मेसिन नचलाउनुहोस्।",alcohol:"यो औषधि खाँदा रक्सी नपिउनुहोस्।",whole:"पूरै निल्नुहोस्। नकुच्नुहोस् वा नचपाउनुहोस्।",course:"सन्चो भए जस्तो लागे पनि पूरा कोर्स सक्नुहोस्।",sun:"लामो समय घाममा बस्नबाट बच्नुहोस्।",shake:"प्रयोग गर्नुअघि राम्ररी हल्लाउनुहोस्।",fridge:"फ्रिजमा राख्नुहोस्। जमाउनु हुँदैन।",children:"बालबालिकाको पहुँचबाट टाढा राख्नुहोस्।",water:"प्रशस्त पानी पिउनुहोस्।"},
+   P:{pain:"दुखाइ",fever:"ज्वरो",infection:"संक्रमण",allergy:"एलर्जी",bp:"रक्तचाप",diabetes:"मधुमेह",cholesterol:"कोलेस्ट्रोल",asthma:"दम",cough:"खोकी",nausea:"वाकवाकी",sleep:"निद्रा"}}},
+ es:{u:{tablet:["comprimido","comprimidos"],capsule:["cápsula","cápsulas"],puff:["inhalación","inhalaciones"],drop:["gota","gotas"],ml:["ml","ml"],sachet:["sobre","sobres"]},half:"Medio comprimido",
+   t:{amt:"{n} {u}",range:"De {a} a {b} {u}",d1:"Una vez al día",d2:"Dos veces al día",dn:"{n} veces al día",ev:"Cada {a} horas",evr:"Cada {a} a {b} horas",day1:"Durante 1 día",dayn:"Durante {n} días",wk1:"Durante 1 semana",wkn:"Durante {n} semanas",max:"No más de {x} en 24 horas"},
+   L:{medicine:"Medicamento",how:"Cómo usarlo",amount:"Cantidad cada vez",often:"Cada cuánto",when:"Cuándo",food:"Comida",long:"Duración",usedfor:"Para",warn:"Advertencias",check:"Compruebe que lo ha entendido",listen:"Escuchar",
+   times:{morning:"Mañana",midday:"Mediodía",evening:"Noche",bedtime:"Al acostarse"},routes:{oral:"Tomar por la boca",inhale:"Inhalar con el inhalador",eye:"Aplicar en el ojo",ear:"Aplicar en el oído",skin:"Aplicar sobre la piel"},
+   foods:{with:"Tomar con comida",before:"Tomar antes de comer",after:"Tomar después de comer",empty:"Tomar en ayunas"},prn:"Solo cuando sea necesario",thin:"Una capa fina",untilDone:"Hasta terminar el medicamento",
+   q1:"¿Cuánto toma cada vez?",q2:"¿Cuántas veces al día?",right:"Correcto.",wrongA:"No exactamente. Vuelva a mirar la etiqueta.",
+   refuse:"No puedo traducir esta instrucción de forma segura. Pida a su farmacéutico que se la explique.",partial:"No pude leer esta parte. Pregunte a su farmacéutico:",unusual:"Esta dosis parece poco habitual. Consúltela con su farmacéutico.",keepLabel:"Conserve la etiqueta original. Su farmacéutico tiene la última palabra.",
+   W:{drowsy:"Este medicamento puede causar somnolencia. Si le afecta, no conduzca ni utilice máquinas.",alcohol:"No beba alcohol mientras tome este medicamento.",whole:"Tráguelo entero. No lo triture ni lo mastique.",course:"Termine todo el tratamiento, aunque se sienta mejor.",sun:"Evite la exposición prolongada al sol.",shake:"Agite bien antes de usar.",fridge:"Guárdelo en la nevera. No lo congele.",children:"Manténgase fuera del alcance de los niños.",water:"Beba abundante agua."},
+   P:{pain:"Dolor",fever:"Fiebre",infection:"Infección",allergy:"Alergia",bp:"Presión arterial",diabetes:"Diabetes",cholesterol:"Colesterol",asthma:"Asma",cough:"Tos",nausea:"Náuseas",sleep:"Sueño"}}},
+ bn:{u:{tablet:["ট্যাবলেট","ট্যাবলেট"],capsule:["ক্যাপসুল","ক্যাপসুল"],puff:["পাফ","পাফ"],drop:["ফোঁটা","ফোঁটা"],ml:["মি.লি.","মি.লি."],sachet:["স্যাশে","স্যাশে"]},half:"আধা ট্যাবলেট",
+   t:{amt:"{n} {u}",range:"{a} থেকে {b} {u}",d1:"দিনে একবার",d2:"দিনে দুবার",dn:"দিনে {n} বার",ev:"প্রতি {a} ঘণ্টা পরপর",evr:"প্রতি {a} থেকে {b} ঘণ্টা পরপর",day1:"1 দিন ধরে",dayn:"{n} দিন ধরে",wk1:"1 সপ্তাহ ধরে",wkn:"{n} সপ্তাহ ধরে",max:"24 ঘণ্টায় {x}-এর বেশি নয়"},
+   L:{medicine:"ওষুধ",how:"ব্যবহারের নিয়ম",amount:"প্রতিবার কতটা",often:"কতবার",when:"কখন",food:"খাবার",long:"কত দিন",usedfor:"কীসের জন্য",warn:"সতর্কতা",check:"আপনি বুঝেছেন কিনা যাচাই করুন",listen:"শুনুন",
+   times:{morning:"সকাল",midday:"দুপুর",evening:"সন্ধ্যা",bedtime:"ঘুমানোর আগে"},routes:{oral:"মুখে খান",inhale:"ইনহেলার দিয়ে শ্বাসের সাথে নিন",eye:"চোখে দিন",ear:"কানে দিন",skin:"ত্বকে লাগান"},
+   foods:{with:"খাবারের সাথে খান",before:"খাবারের আগে খান",after:"খাবারের পরে খান",empty:"খালি পেটে খান"},prn:"শুধুমাত্র প্রয়োজন হলে",thin:"একটি পাতলা স্তর",untilDone:"ওষুধ শেষ না হওয়া পর্যন্ত",
+   q1:"আপনি প্রতিবার কতটা নেন?",q2:"দিনে কতবার?",right:"সঠিক।",wrongA:"পুরোপুরি সঠিক নয়। লেবেলটি আবার দেখুন।",
+   refuse:"আমি এই নির্দেশনাটি নিরাপদে অনুবাদ করতে পারছি না। অনুগ্রহ করে আপনার ফার্মাসিস্টকে এটি বুঝিয়ে দিতে বলুন।",partial:"আমি এই অংশটি পড়তে পারিনি। আপনার ফার্মাসিস্টকে জিজ্ঞাসা করুন:",unusual:"এই মাত্রাটি অস্বাভাবিক মনে হচ্ছে। আপনার ফার্মাসিস্টের সাথে যাচাই করুন।",keepLabel:"আসল লেবেলটি রেখে দিন। চূড়ান্ত সিদ্ধান্ত আপনার ফার্মাসিস্টের।",
+   W:{drowsy:"এই ওষুধে ঘুম ঘুম ভাব হতে পারে। প্রভাব পড়লে গাড়ি বা যন্ত্র চালাবেন না।",alcohol:"এই ওষুধ খাওয়ার সময় মদ পান করবেন না।",whole:"পুরোটা গিলে ফেলুন। গুঁড়ো করবেন না বা চিবাবেন না।",course:"ভালো বোধ করলেও পুরো কোর্স শেষ করুন।",sun:"দীর্ঘক্ষণ রোদে থাকা এড়িয়ে চলুন।",shake:"ব্যবহারের আগে ভালো করে ঝাঁকান।",fridge:"ফ্রিজে রাখুন। জমাবেন না।",children:"শিশুদের নাগালের বাইরে রাখুন।",water:"প্রচুর পানি পান করুন।"},
+   P:{pain:"ব্যথা",fever:"জ্বর",infection:"সংক্রমণ",allergy:"অ্যালার্জি",bp:"রক্তচাপ",diabetes:"ডায়াবেটিস",cholesterol:"কোলেস্টেরল",asthma:"হাঁপানি",cough:"কাশি",nausea:"বমি বমি ভাব",sleep:"ঘুম"}}}
+};
+for(const [k,g] of Object.entries(GEN)) L[k]=g.L;
+L.other=L.en;
+const fill=(s,o)=>s.replace(/\{(\w)\}/g,(_,k)=>o[k]);
+function genAmount(g,unit,dose){
+  if(dose.half) return unit==="tablet"?g.half:null;
+  const w=g.u[unit],a=dose.min,b=dose.max;
+  return a===b?fill(g.t.amt,{n:a,u:a===1?w[0]:w[1]}):fill(g.t.range,{a,b,u:w[1]});
+}
+function genOften(g,f){
+  if(f.perDay) return f.perDay===1?g.t.d1:f.perDay===2?g.t.d2:fill(g.t.dn,{n:f.perDay});
+  if(f.every) return f.every[0]===f.every[1]?fill(g.t.ev,{a:f.every[0]}):fill(g.t.evr,{a:f.every[0],b:f.every[1]});
+  return null;
+}
+function genDur(g,d){ if(d.until) return g.L.untilDone; const w=d.unit==="week"; return d.n===1?(w?g.t.wk1:g.t.day1):fill(w?g.t.wkn:g.t.dayn,{n:d.n}); }
+
+/* ---------- Parser ---------- */
+const WORDNUM={one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10,twelve:12,fourteen:14};
+const UNIT_RE="(tablets?|caplets?|capsules?|puffs?|inhalations?|drops?|ml|mls|millilitres?|milliliters?|sachets?)";
+function unitKey(w){w=w.toLowerCase();if(/^(tablet|caplet)/.test(w))return"tablet";if(/^capsule/.test(w))return"capsule";if(/^(puff|inhalation)/.test(w))return"puff";if(/^drop/.test(w))return"drop";if(/^(ml|millilit)/.test(w))return"ml";if(/^sachet/.test(w))return"sachet";return null;}
+const UNSAFE=[/\bthen\b/,/\balternate days?\b/,/\bweekly\b|\bonce a week\b|\bper week\b|\beach week\b/,/\b(monday|tuesday|wednesday|thursday|friday|saturday|sunday)s?\b/,/\bas directed\b/,/\btaper|reduc|increas|decreas/,/\bunits?\b/,/\bsliding\b/,/\bdissolve under\b/,/\bif blood sugar\b/];
+const IGNORE_LINE=/^\s*(sample label|patient|name|qty|quantity|rpts?|repeats?|dr\.?\b|doctor|prescriber|date|ph\b|phone|tel|rx|script|pharmacy|sample pharmacy|address|store|pharmacist)/i;
+const WARN_RULES=[
+ ["drowsy",/(this (medicine|medication) |it )?((may|can|will) )?(cause|causes) drowsiness( and may increase the effects of alcohol)?|(if affected,? )?do not drive or (operate|use) machinery|drows\w*/],
+ ["alcohol",/(do not|don't|avoid) (drink(ing)? )?alcohol( while (taking|using) this (medicine|medication))?|\balcohol\b/],
+ ["whole",/swallow (them |it |tablets? |capsules? |the tablets? |the capsules? )?whole|do not (crush|chew|open)( or (crush|chew|open))?( (it|them|the tablets?|the capsules?))?/],
+ ["course",/(complete|finish) the (full |whole |entire )?course( of (this )?(medicine|treatment))?( even if you feel better)?/],
+ ["sun",/(avoid )?(prolonged |long )?(exposure to )?(the )?(direct )?sun(light)?( exposure)?|wear sunscreen/],
+ ["shake",/shake (well|the bottle well)( before (use|using))?/],
+ ["fridge",/(keep|store) (in (the |a )?)?(fridge|refrigerator)|refrigerate|do not freeze/],
+ ["children",/keep out of (the )?reach of children/],
+ ["water",/drink (plenty|lots) of (water|fluids)/]
+];
+function wipe(str,re){return str.replace(new RegExp(re.source,"g")," ");}
+const PURPOSE=[["pain",/\bfor (the )?pain( relief)?\b/],["fever",/\bfor (a )?(fever|temperature)\b/],["infection",/\bfor (an |the )?infection\b/],["allergy",/\bfor (hay fever|allerg(y|ies))\b/],["bp",/\bfor (high )?blood pressure\b/],["diabetes",/\bfor diabetes\b/],["cholesterol",/\bfor cholesterol\b/],["asthma",/\bfor asthma\b/],["cough",/\bfor (a )?cough\b/],["nausea",/\bfor nausea\b/],["sleep",/\bfor sleep\b/]];
+const STOP=new Set(["take","swallow","use","by","mouth","orally","a","an","the","and","of","to","please","dose","doses","each","time","times","for","in","at","or","with","your","you","medicine","this","it","them","before","use","or","as","when"]);
+
+function wnum(s){s=s.toLowerCase();if(/^\d+$/.test(s))return+s;return WORDNUM[s]??null;}
+
+function parseLabel(raw){
+  const res={drug:null,instr:null,warnings:[],unknown:[],purpose:null,refused:false,refuseText:null};
+  const text=raw.replace(/\r/g,"").replace(/[|]/g,"I").replace(/(?<=\d)[oO]|[oO](?=\d)/g,"0").replace(/[ \t]+/g," ").trim();
+  if(!text){return null;}
+  const lines=text.split("\n").map(s=>s.trim()).filter(Boolean);
+  const instrParts=[],instrOrig=[];
+  // keep the label's own lines, then rejoin lines that a camera or printer broke mid-sentence
+  let body="";
+  for(const line of lines){
+    if(IGNORE_LINE.test(line)) continue;
+    if(!res.drug && /\b\d+(\.\d+)?\s?((mg|mcg|micrograms?|g|ml)\b|%)/i.test(line) && !/\b(take|inhale|apply|use|instil|instill|put|place)\b/i.test(line)){res.drug=line;continue;}
+    if(!body){body=line;continue;}
+    const cont=/^[a-z0-9(]/.test(line)||/\b(when|for|with|and|or|to|a|an|the|every|of|then|in|at|before|after|on|than|more|not|times|tablets?|capsules?)$/i.test(body);
+    body+=cont?(" "+line):(/[.!:;]$/.test(body)?" ":". ")+line;
+  }
+  {
+    const sentences=body.split(/(?<=[.!])\s+/).map(s=>s.trim()).filter(Boolean);
+    for(const s of sentences){
+      const low=s.toLowerCase().replace(/[.!]+$/,"");
+      const isMax=/\bmore than\b|\bmaximum\b|\bmax\.?\s*\d/.test(low);
+      const hasVerb=/\b(take|swallow|inhale|apply|instil|instill|use|put|place|chew|dissolve|insert)\b/.test(low);
+      const hasDosing=/\d|\b(one|two|three|four|five|six|half|times?|daily|every|once|twice|morning|evening|night|bedtime|midday|lunch|required|needed|food|meals?|stomach|thinly|thin layer|hours?)\b/.test(low);
+      if(isMax || (hasVerb && hasDosing && !/^do not\b/.test(low))){instrParts.push(low);instrOrig.push(s);continue;}
+      let matched=false;let rest=low;
+      for(const [k,re] of WARN_RULES){ if(re.test(rest)){ if(!res.warnings.includes(k)) res.warnings.push(k); matched=true; rest=wipe(rest,re); } }
+      // pure food sentences such as "Take with food." are handled as instructions above; "With food." alone:
+      if(/^(with|after|before) (food|meals?)$/.test(low)){instrParts.push("take "+low);instrOrig.push(s);continue;}
+      if(matched){
+        const left=rest.replace(/\b(this|medicine|may|cause|if|affected|do|not|drive|or|operate|machinery|use|while|taking|drink|avoid|prolonged|exposure|to|the|and|keep|before|well|it|them|whole|crush|chew|swallow|in|of|a|be|can|tablets?|capsules?|even|you|feel|better|full|course|complete|finish|sun|sunlight|light|direct|long|wear|sunscreen|plenty|lots|water|fluids|open|capsules?|refrigerate|refrigerator|fridge|freeze|out|reach|children)\b/g," ").replace(/[^a-z0-9]+/g," ").trim();
+        if(left) res.unknown.push(s);
+        continue;
+      }
+      if(/^(keep|store) (in a cool|below|at room)/.test(low)){res.unknown.push(s);continue;}
+      res.unknown.push(s);
+    }
+  }
+  if(!instrParts.length){res.refused=true;res.refuseText=null;return res;}
+  const ins=instrParts.join(". ");
+  res.instr=parseInstruction(ins,res);
+  res.instr.display=instrOrig.join(" ");
+  return res;
+}
+
+function parseInstruction(s,res){
+  const r={route:"oral",unit:null,dose:null,perDay:null,every:null,slots:[],food:null,prn:false,max:null,dur:null,original:s,leftover:"",unsafe:false,unusual:false};
+  let w=" "+s+" ";
+  const eat=re=>{const m=w.match(re);if(m){w=w.replace(m[0]," ");}return m;};
+  for(const re of UNSAFE){ if(re.test(s)){r.unsafe=true;} }
+  // route
+  if(/\binhale|inhaler|puffs?\b/.test(s)) r.route="inhale";
+  else if(/\b(eye|eyes)\b/.test(s)) r.route="eye";
+  else if(/\b(ear|ears)\b/.test(s)) r.route="ear";
+  else if(/\bapply|skin|affected area|thinly|cream|ointment\b/.test(s)) r.route="skin";
+  // max dose first, so "do not take more than" is still intact
+  const NW="(\\d+|"+Object.keys(WORDNUM).join("|")+")";
+  const PER="\\s*(?:(?:in|per|within|every|over)\\s+)?(?:any\\s+)?(?:24\\s*hours?(?: period)?|24 hour period|a day|one day|day)";
+  let m=eat(new RegExp("\\b(?:do not (?:take|use)\\s+|no\\s+|not\\s+)more than\\s+"+NW+"\\s*"+UNIT_RE+"?"+PER));
+  if(!m) m=eat(new RegExp("\\bmax(?:imum)?\\.?(?:\\s+of)?\\s*"+NW+"\\s*"+UNIT_RE+"?"+PER));
+  eat(/\b(take|swallow|inhale|apply|instil|instill|use|put|place|insert)\b/g); w=w.replace(/\b(take|swallow|inhale|apply|instil|instill|use|put|place|insert)\b/g," ");
+  eat(/\b(by mouth|orally)\b/);
+  eat(/\b(into|in|to|on) (the |each |both )?(affected )?(eyes?|ears?|area|skin)\b/);
+  if(m){r.max=wnum(m[1]); if(m[2]) r.maxUnit=unitKey(m[2]);}
+  // dose
+  const NUMW="(\\d+(?:\\.\\d+)?|half|½|1/2|"+Object.keys(WORDNUM).join("|")+")";
+  m=eat(new RegExp("\\b"+NUMW+"(?:\\s*(?:to|-|–|or)\\s*"+NUMW+")?\\s*(?:x\\s*)?"+UNIT_RE+"\\b"));
+  if(m){
+    r.unit=unitKey(m[3]);
+    if(/^(half|½|1\/2)$/.test(m[1])&&!m[2]) r.dose={half:true};
+    else{const a=wnum(m[1]),b=m[2]?wnum(m[2]):a; if(a!=null&&b!=null&&Number.isInteger(a)&&Number.isInteger(b)&&a>0&&b>=a) r.dose={min:a,max:b}; else r.unsafe=true;}
+  } else {
+    const h=eat(/\bhalf (?:a |of a )?(tablet|caplet)\b/); if(h){r.unit="tablet";r.dose={half:true};}
+  }
+  if(!r.dose && r.route==="skin"){ if(eat(/\b(a )?thin(ly| layer)\b/)) r.dose={thin:true}; }
+  if(r.max && !r.maxUnit) r.maxUnit=r.unit;
+  // frequency
+  const FW={once:1,twice:2};
+  m=eat(/\b(once|twice|one|two|three|four|five|six|\d+) (?:times? )?(?:a|per|each|every)? ?(day|daily)\b/);
+  if(m){r.perDay=FW[m[1]]??wnum(m[1]);}
+  if(!r.perDay){m=eat(/\b(once|twice) daily\b/); if(m) r.perDay=FW[m[1]];}
+  m=eat(/\bevery (\d+|one|two|three|four|five|six|eight|twelve)(?:\s*(?:to|-|–|or)\s*(\d+|one|two|three|four|five|six|eight|twelve))?\s*hours?\b/);
+  if(m){const a=wnum(m[1]),b=m[2]?wnum(m[2]):a; r.every=[a,b];}
+  if(!r.perDay&&!r.every){ if(eat(/\b(daily|every day|each day|once a day|a day)\b/)) r.perDay=1; }
+  else eat(/\b(daily|every day|each day)\b/);
+  // time of day
+  const t=[];
+  if(eat(/\b(in the |every |each )?morning\b/)) t.push("morning");
+  if(eat(/\b(at |around )?(midday|lunch ?time|noon|with lunch)\b/)) t.push("midday");
+  if(eat(/\b(in the |every |each )?evening\b/)) t.push("evening");
+  if(eat(/\b(at night|at bedtime|before bed(time)?|nightly|every night|each night|at night time)\b/)) t.push("bedtime");
+  // when needed
+  if(eat(/\b(when|if|as) (required|needed|necessary)\b|\bprn\b/)) r.prn=true;
+  // food
+  if(eat(/\b(with|during) (food|meals?|a meal|breakfast|dinner)\b/)) r.food="with";
+  else if(eat(/\b(\d+ minutes? |half an hour |an hour )?before (food|meals?|breakfast)\b/)) r.food="before";
+  else if(eat(/\bafter (food|meals?|eating)\b/)) r.food="after";
+  else if(eat(/\b(on an |on )?empty stomach\b/)) r.food="empty";
+  // duration
+  m=eat(/\bfor (\d+|one|two|three|four|five|six|seven|eight|nine|ten|twelve|fourteen) (days?|weeks?)\b/);
+  if(m) r.dur={n:wnum(m[1]),unit:/^week/.test(m[2])?"week":"day"};
+  if(eat(/\buntil (finished|all (taken|gone|used)|the course is finished|completed)\b/)) r.dur={until:true};
+  // warnings written inside the instruction sentence
+  for(const [k,re] of WARN_RULES){ if(re.test(w)){ if(!res.warnings.includes(k)) res.warnings.push(k); w=wipe(w,re); } }
+  // purpose
+  for(const [k,re] of PURPOSE){ if(re.test(w)){ res.purpose=k; w=w.replace(re," "); break; } }
+  eat(/\bfor (relief of )?(the )?(symptoms)\b/);
+  // slots
+  if(t.length) r.slots=t;
+  else if(r.perDay===2) r.slots=["morning","evening"];
+  else if(r.perDay===3) r.slots=["morning","midday","evening"];
+  else if(r.perDay===4) r.slots=["morning","midday","evening","bedtime"];
+  if(t.length && r.perDay && r.perDay!==t.length && !(r.perDay===1&&t.length===1)) r.unsafe=true;
+  if(t.length && !r.perDay && !r.every) r.perDay=t.length;
+  // leftovers
+  const left=w.replace(/[^a-z0-9½/ ]+/g," ").split(/\s+/).filter(x=>x&&!STOP.has(x));
+  r.leftover=left.join(" ");
+  if(/\d/.test(r.leftover)) r.unsafe=true;
+  if(!r.dose && r.route!=="skin") r.unsafe=true;
+  if(r.dose && r.dose.half && !(r.unit && UNITS[r.unit].half)) r.unsafe=true;
+  if(!r.perDay && !r.every && !r.prn) r.unsafe=true;
+  if(r.dose && !r.dose.half && !r.dose.thin && (r.dose.max>4 && r.unit!=="ml" && r.unit!=="drop")) r.unusual=true;
+  if(r.perDay && r.perDay>6) r.unusual=true;
+  if(r.every && (r.every[0]<2||r.every[1]>24)) r.unusual=true;
+  return r;
+}
+
+/* ---------- Icons (static markup only) ---------- */
+const ICON={
+ morning:'<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 23h20"/><path d="M10 23a6 6 0 0 1 12 0"/><path d="M16 9v3M7.5 14l2 2M24.5 14l-2 2M4 19h2M26 19h2"/></svg>',
+ midday:'<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="16" cy="16" r="5"/><path d="M16 4v3M16 25v3M4 16h3M25 16h3M7.5 7.5l2 2M22.5 22.5l2 2M24.5 7.5l-2 2M9.5 22.5l-2 2"/></svg>',
+ evening:'<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 23h20"/><path d="M10 23a6 6 0 0 1 12 0"/><path d="M16 15v-4M13 13l3-3 3 3"/><path d="M5 27h22" opacity=".5"/></svg>',
+ bedtime:'<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M21 6a10 10 0 1 0 6 14A8 8 0 0 1 21 6z"/></svg>',
+ food:'<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="16" cy="17" r="7"/><path d="M5 6v8a2 2 0 0 0 4 0V6M7 14v13M27 6c-2 0-3 3-3 7h3v14"/></svg>',
+ nofood:'<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="16" cy="16" r="9"/><path d="M8 8l16 16"/></svg>',
+ clock:'<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="16" cy="16" r="11"/><path d="M16 9v7l5 3"/></svg>',
+ need:'<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M16 5v14"/><circle cx="16" cy="25" r="1.6" fill="currentColor"/></svg>',
+ cal:'<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="5" y="7" width="22" height="20" rx="3"/><path d="M5 13h22M11 4v5M21 4v5"/></svg>',
+ tablet:'<svg viewBox="0 0 20 20"><circle cx="10" cy="10" r="8" fill="currentColor" opacity=".9"/><path d="M4 10h12" stroke="var(--surface)" stroke-width="1.5"/></svg>',
+ half:'<svg viewBox="0 0 20 20"><path d="M10 2a8 8 0 0 0 0 16z" fill="currentColor"/><path d="M10 2a8 8 0 0 1 0 16" fill="none" stroke="currentColor" stroke-dasharray="2 2"/></svg>',
+ capsule:'<svg viewBox="0 0 20 20"><rect x="2" y="6" width="16" height="8" rx="4" fill="currentColor"/><path d="M10 6v8" stroke="var(--surface)" stroke-width="1.5"/></svg>',
+ puff:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 10c2-3 4 3 6 0s4 3 6 0"/><circle cx="10" cy="10" r="8" opacity=".3"/></svg>',
+ drop:'<svg viewBox="0 0 20 20"><path d="M10 2C7 7 5 9.5 5 12.5a5 5 0 0 0 10 0C15 9.5 13 7 10 2z" fill="currentColor"/></svg>'
+};
+function el(tag,attrs,kids){const e=document.createElement(tag);if(attrs)for(const[k,v]of Object.entries(attrs)){if(k==="text")e.textContent=v;else if(k==="html")e.innerHTML=v;else if(v!==null&&v!==undefined)e.setAttribute(k,v);}if(kids)for(const c of kids)if(c)e.append(c);return e;}
+
+/* ---------- Rendering ---------- */
+let lang="fa", parsed=null;
+const langBox=$("langs");
+for(const lg of LANGS){
+  const b=el("button",{type:"button","data-code":lg.code,lang:lg.html,"aria-pressed":lg.code===lang?"true":"false",title:lg.en,text:lg.name});
+  b.addEventListener("click",()=>{lang=lg.code;[...langBox.children].forEach(x=>x.setAttribute("aria-pressed",x===b?"true":"false"));render();});
+  langBox.append(b);
+}
+function line(key,val,en,cls){
+  const lg=LANGS.find(x=>x.code===lang);
+  const li=el("li",cls?{class:cls}:null);
+  li.append(el("span",{class:"k",lang:lg.html,dir:lg.dir,text:L[lang][key]??key}));
+  li.append(el("span",{class:"v",lang:lg.html,dir:lg.dir,text:val}));
+  if(!isEN(lang) && en) li.append(el("span",{class:"en",lang:"en",text:en}));
+  return li;
+}
+function pillsFor(r){
+  const box=el("span",{class:"pills"});
+  if(!r.dose||r.dose.thin){return box;}
+  if(r.dose.half){box.append(el("span",{html:ICON.half}));return box;}
+  const icon=r.unit==="capsule"?ICON.capsule:r.unit==="puff"?ICON.puff:r.unit==="drop"?ICON.drop:ICON.tablet;
+  if(r.unit==="ml"){box.append(el("span",{text:r.dose.min+" mL"}));return box;}
+  const n=Math.min(r.dose.max,4);
+  for(let i=0;i<n;i++){const s=el("span",{html:icon});if(i>=r.dose.min)s.style.opacity=".35";box.append(s);}
+  return box;
+}
+let speakText="";
+function render(){
+  const out=$("out"); out.replaceChildren();
+  if(!parsed){out.append(el("p",{class:"empty",text:"Choose a sample or add a label to see the patient's version."}));return;}
+  const T=L[lang], E=L.en, lg=LANGS.find(x=>x.code===lang), r=parsed.instr;
+  const head=el("div",{class:"drug"});
+  head.append(el("strong",{text:parsed.drug||"Medicine name not found"}));
+  const ok=r&&!r.unsafe&&!parsed.refused;
+  head.append(el("span",{class:"badge "+(ok?(parsed.unknown.length||r.leftover?"warn":"ok"):"bad"),text:ok?(parsed.unknown.length||r.leftover?"Partly translated":(lang==="other"?"Pictures and English":"Fully translated")):"Refused for safety"}));
+  out.append(head);
+  if(lang==="other"){
+    const bn=el("div",{class:"banner",role:"note"});
+    bn.append(el("strong",{text:"Your language isn't here yet"}));
+    bn.append(el("span",{text:"Use the pictures below, and show this screen to your pharmacist. Pharmacies can get a professional interpreter for free through the TIS National Free Interpreting Service, pharmacy line:"}));
+    bn.append(el("span",{class:"num",text:"1300 131 450"}));
+    bn.append(el("span",{text:"For other help with an interpreter, anyone can call TIS National on 131 450."}));
+    out.append(bn);
+  }
+  const list=el("ul",{class:"lines"});
+  const speak=[];
+  if(!ok){
+    list.append(line("how",T.refuse,!isEN(lang)?E.refuse:null,"badline"));
+    list.append(line("how",(r&&r.display)?("“"+r.display+"”"):"No instruction found on the label.",null,"badline"));
+    speak.push(T.refuse);
+    out.append(list);
+    if(parsed.warnings.length){const wl=el("ul",{class:"lines"});for(const k of parsed.warnings){wl.append(line("warn",T.W[k],E.W[k],"warnline"));speak.push(T.W[k]);}out.append(wl);}
+    finish(out,speak,null);return;
+  }
+  // schedule
+  const sched=el("div",{class:"sched",role:"img","aria-label":"Daily schedule"});
+  for(const s of ["morning","midday","evening","bedtime"]){
+    const on=r.slots.includes(s);
+    const slot=el("div",{class:"slot "+(on?"on":"off")});
+    slot.append(el("span",{html:ICON[s]}));
+    slot.append(el("span",{class:"t",lang:lg.html,text:T.times[s]}));
+    slot.append(on?pillsFor(r):el("span",{class:"d",text:"—"}));
+    sched.append(slot);
+  }
+  if(r.slots.length) out.append(sched);
+  // chips
+  const chips=el("div",{class:"chip-row"});
+  const chip=(ic,txt)=>{const c=el("span",{class:"chip",lang:lg.html,dir:lg.dir});c.append(el("span",{html:ICON[ic]}));c.append(el("span",{text:txt}));return c;};
+  if(r.every) chips.append(chip("clock",oftenText(lang,r)));
+  if(r.prn) chips.append(chip("need",T.prn));
+  if(r.food) chips.append(chip(r.food==="empty"?"nofood":"food",T.foods[r.food]));
+  if(r.dur) chips.append(chip("cal",durText(lang,r.dur)));
+  if(chips.children.length) out.append(chips);
+  // lines
+  list.append(line("how",T.routes[r.route],E.routes[r.route])); speak.push(T.routes[r.route]);
+  let amt;
+  if(r.dose.thin){amt=T.thin;}
+  else {amt=amountText(lang,r.unit,r.dose);}
+  if(amt){list.append(line("amount",amt,r.dose.thin?E.thin:amountText("en",r.unit,r.dose)));speak.push(T.amount+": "+amt);}
+  const often=oftenText(lang,r);
+  if(often){list.append(line("often",often,oftenText("en",r)));speak.push(often);}
+  if(r.slots.length){const tx=r.slots.map(s=>T.times[s]).join(lang==="zh"?"、":lang==="fa"||lang==="ar"?"، ":", ");list.append(line("when",tx,r.slots.map(s=>E.times[s]).join(", ")));speak.push(T.when+": "+tx);}
+  if(r.prn){list.append(line("when",T.prn,E.prn));speak.push(T.prn);}
+  if(r.max){const mt=maxText(lang,r.maxUnit||r.unit,r.max);list.append(line("amount",mt,maxText("en",r.maxUnit||r.unit,r.max),"warnline"));speak.push(mt);}
+  if(r.food){list.append(line("food",T.foods[r.food],E.foods[r.food]));speak.push(T.foods[r.food]);}
+  if(r.dur){list.append(line("long",durText(lang,r.dur),durText("en",r.dur)));speak.push(durText(lang,r.dur));}
+  if(parsed.purpose){list.append(line("usedfor",T.P[parsed.purpose],E.P[parsed.purpose]));}
+  for(const k of parsed.warnings){list.append(line("warn",T.W[k],E.W[k],"warnline"));speak.push(T.W[k]);}
+  if(r.unusual){list.append(line("warn",T.unusual,E.unusual,"badline"));speak.push(T.unusual);}
+  const unk=[...(r.leftover?[r.leftover]:[]),...parsed.unknown];
+  if(unk.length){list.append(line("warn",T.partial+" “"+unk.join(" · ")+"”",!isEN(lang)?E.partial:null,"badline"));speak.push(T.partial);}
+  out.append(list);
+  finish(out,speak,r);
+}
+function finish(out,speak,r){
+  const T=L[lang], lg=LANGS.find(x=>x.code===lang);
+  speakText=speak.join(". ");
+  const row=el("div",{class:"row"});
+  const sp=el("button",{type:"button",id:"speak"});
+  sp.append(el("span",{text:"▶ "}),el("bdi",{lang:lg.html,text:T.listen}));
+  if(!isEN(lang)) sp.append(el("span",{text:" · Listen"}));
+  const vnote=el("span",{class:"hint",id:"vnote"});
+  sp.addEventListener("click",()=>doSpeak(vnote));
+  row.append(sp,vnote);
+  out.append(row);
+  if(r&&!r.unsafe) out.append(quiz(r));
+  out.append(el("p",{class:"hint",lang:lg.html,dir:lg.dir,text:T.keepLabel}));
+  if(!isEN(lang)) out.append(el("p",{class:"hint",lang:"en",text:L.en.keepLabel}));
+  out.append(el("p",{class:"hint",text:"Translation status: "+lg.status}));
+}
+function quiz(r){
+  const T=L[lang], lg=LANGS.find(x=>x.code===lang);
+  const box=el("div",{class:"quiz"});
+  box.append(el("span",{class:"k",lang:lg.html,dir:lg.dir,text:T.check}));
+  if(!isEN(lang)) box.append(el("span",{class:"hint",text:L.en.check}));
+  const qs=[];
+  if(r.dose&&!r.dose.thin){
+    const correct=r.dose; const pool=[{half:true},{min:1,max:1},{min:2,max:2},{min:3,max:3},{min:1,max:2}];
+    const key=d=>d.half?"h":d.min+"-"+d.max;
+    let opts=pool.filter(d=>key(d)!==key(correct)&&(!d.half||UNITS[r.unit].half)).slice(0,2); opts.push(correct);
+    opts.sort((a,b)=>(a.half?0.5:a.min)-(b.half?0.5:b.min)||(a.max||0)-(b.max||0));
+    qs.push({q:T.q1,opts:opts.map(d=>({t:amountText(lang,r.unit,d),ok:key(d)===key(correct)}))});
+  }
+  if(r.perDay){const c=r.perDay;let o=[...new Set([1,2,3,4].filter(x=>x!==c))].slice(0,2);o.push(c);o.sort((a,b)=>a-b);
+    qs.push({q:T.q2,opts:o.map(n=>({t:oftenText(lang,{perDay:n}),ok:n===c}))});}
+  for(const q of qs){
+    const fb=el("p",{class:"fb",role:"status",lang:lg.html,dir:lg.dir});
+    const wrap=el("div",{class:"opts"});
+    box.append(el("p",{class:"q",lang:lg.html,dir:lg.dir,text:q.q}));
+    for(const o of q.opts){const b=el("button",{type:"button",lang:lg.html,dir:lg.dir,text:o.t});
+      b.addEventListener("click",()=>{[...wrap.children].forEach(x=>x.classList.remove("right","wrong"));b.classList.add(o.ok?"right":"wrong");fb.textContent=o.ok?T.right:T.wrongA;});
+      wrap.append(b);}
+    box.append(wrap,fb);
+  }
+  return box;
+}
+function doSpeak(note){
+  note.textContent="";
+  if(!("speechSynthesis" in window)){note.textContent=L.en.noVoice;return;}
+  const lg=LANGS.find(x=>x.code===lang);
+  const pick=()=>{const vs=speechSynthesis.getVoices();const base=lg.tts.split("-")[0];return vs.find(v=>v.lang&&v.lang.toLowerCase()===lg.tts.toLowerCase())||vs.find(v=>v.lang&&v.lang.toLowerCase().startsWith(base));};
+  let v=pick();
+  const go=()=>{v=v||pick();if(!v){note.textContent=L.en.noVoice+" Recorded audio will replace this in the full app.";return;}
+    speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(speakText);u.voice=v;u.lang=v.lang;u.rate=.9;speechSynthesis.speak(u);};
+  if(!v&&speechSynthesis.getVoices().length===0){speechSynthesis.onvoiceschanged=()=>{speechSynthesis.onvoiceschanged=null;go();};setTimeout(()=>{if(!pick())note.textContent=L.en.noVoice;},1500);}
+  else go();
+}
+
+/* ---------- Input handling ---------- */
+const ta=$("labelText");
+/* A real label is a few hundred characters. Anything far longer is not a label, so refuse it rather than guess. */
+const MAX_LABEL=4000;
+function run(){parsed=ta.value.length>MAX_LABEL?{drug:null,instr:null,warnings:[],unknown:[],purpose:null,refused:true}:parseLabel(ta.value);render();}
+$("go").addEventListener("click",run);
+$("clear").addEventListener("click",()=>{ta.value="";parsed=null;sampleBtns.forEach(b=>b.setAttribute("aria-pressed","false"));render();ta.focus();});
+const sampleBox=$("paneSample"); const sampleBtns=[];
+SAMPLES.forEach((s,i)=>{const b=el("button",{type:"button","aria-pressed":"false"});b.append(el("span",{text:s.s}),el("small",{text:s.k}));
+  b.addEventListener("click",()=>{sampleBtns.forEach(x=>x.setAttribute("aria-pressed",x===b?"true":"false"));ta.value=s.t;run();});
+  sampleBox.append(b);sampleBtns.push(b);});
+function tab(which){
+  [["tSample","paneSample"],["tPhoto","panePhoto"],["tType",null]].forEach(([t,p])=>{const on=t===which;$(t).setAttribute("aria-pressed",on?"true":"false");if(p)$(p).hidden=!on;});
+  if(which==="tType")ta.focus();
+}
+$("tSample").addEventListener("click",()=>tab("tSample"));
+$("tPhoto").addEventListener("click",()=>tab("tPhoto"));
+$("tType").addEventListener("click",()=>tab("tType"));
+
+/* Photo reading: tries on-device OCR (Tesseract.js). If it cannot load here, the user types the text instead. */
+let ocrLoad=null;
+function loadOCR(){
+  if(window.Tesseract) return Promise.resolve();
+  if(ocrLoad) return ocrLoad;
+  ocrLoad=new Promise((res,rej)=>{const s=document.createElement("script");s.src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js";s.crossOrigin="anonymous";s.onload=()=>res();s.onerror=()=>{ocrLoad=null;rej(new Error("load"));};document.head.append(s);});
+  return ocrLoad;
+}
+function withTimeout(p,ms){return Promise.race([p,new Promise((_,rej)=>setTimeout(()=>rej(new Error("timeout")),ms))]);}
+function prep(img){
+  const sc=Math.min(1,1800/Math.max(img.naturalWidth,img.naturalHeight));
+  const c=document.createElement("canvas");c.width=Math.round(img.naturalWidth*sc);c.height=Math.round(img.naturalHeight*sc);
+  const x=c.getContext("2d");x.drawImage(img,0,0,c.width,c.height);
+  const d=x.getImageData(0,0,c.width,c.height),p=d.data;
+  for(let i=0;i<p.length;i+=4){let g=.299*p[i]+.587*p[i+1]+.114*p[i+2];g=Math.max(0,Math.min(255,(g-128)*1.4+128));p[i]=p[i+1]=p[i+2]=g;}
+  x.putImageData(d,0,0);return c;
+}
+const st=$("ocrStatus");
+function status(t,ok){st.hidden=false;st.textContent=t;st.classList.toggle("ok",!!ok);}
+$("file").addEventListener("change",e=>{
+  const f=e.target.files&&e.target.files[0]; if(!f) return;
+  if(!/^image\//.test(f.type)){status("That file is not a photo. Choose a JPEG or PNG.");return;}
+  const url=URL.createObjectURL(f); const img=$("preview");
+  img.onload=async()=>{
+    img.hidden=false;
+    status("Reading the label on this device…",true);
+    try{
+      await withTimeout(loadOCR(),15000);
+      const worker=await withTimeout(Tesseract.createWorker("eng"),30000);
+      const {data}=await withTimeout(worker.recognize(prep(img)),45000);
+      await worker.terminate();
+      const txt=(data&&data.text||"").replace(/\n{2,}/g,"\n").trim();
+      if(txt.length<8){status("I couldn't find text in that photo. Try a closer, sharper photo, or type the label below.");return;}
+      ta.value=txt; status("Done. Check the text below matches your label, fix any mistakes, then press Translate label.",true);
+      run();
+    }catch(err){
+      status("Automatic reading isn't available here. Type the instruction from the photo into the box below, then press Translate label.");
+      ta.focus();
+    }
+  };
+  img.onerror=()=>{URL.revokeObjectURL(url);status(/hei[cf]/i.test(f.type+f.name)?"This browser can't open iPhone HEIC photos. Take the photo from this page instead.":"Couldn't open that photo. Choose a JPEG or PNG.");};
+  img.src=url;
+});
+
+/* Expose the engine for automated tests */
+window.LabelLensEngine={parseLabel,amountText,oftenText};
+// open on the first sample so the page shows what it does
+sampleBtns[0].click();
+})();
+</script>
+</body>
+</html>
